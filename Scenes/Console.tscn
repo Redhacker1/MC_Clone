@@ -1,0 +1,77 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://Scenes/Console.cs" type="Script" id=1]
+
+[node name="Control" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 1.64229
+margin_top = -1.68179
+margin_right = 1.64221
+margin_bottom = -1.68176
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VSplitContainer" type="VSplitContainer" parent="."]
+process_priority = -1
+anchor_left = 0.216
+anchor_top = 0.003
+anchor_right = 0.998
+anchor_bottom = 0.785
+margin_left = -0.18399
+margin_top = 0.2
+margin_right = 0.0480347
+margin_bottom = -3.05176e-05
+rect_clip_content = true
+custom_constants/separation = 0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ConsoleHistory" type="TextEdit" parent="VSplitContainer"]
+margin_right = 801.0
+margin_bottom = 437.0
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.76
+text = "This is Text"
+readonly = true
+smooth_scrolling = true
+wrap_enabled = true
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VSplitContainer"]
+margin_top = 445.0
+margin_right = 801.0
+margin_bottom = 469.0
+dragger_visibility = 1
+
+[node name="LineEdit" type="LineEdit" parent="VSplitContainer/HSplitContainer"]
+margin_right = 739.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+caret_blink = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Button" type="Button" parent="VSplitContainer/HSplitContainer"]
+margin_left = 751.0
+margin_right = 801.0
+margin_bottom = 24.0
+rect_min_size = Vector2( 50, 0 )
+
+[node name="Label" type="Label" parent="VSplitContainer/HSplitContainer/Button"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_right = -3.8147e-06
+margin_bottom = -3.05176e-05
+text = "Send"
+align = 1
+valign = 1
+clip_text = true
+uppercase = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
