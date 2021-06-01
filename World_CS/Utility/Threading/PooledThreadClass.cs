@@ -55,7 +55,7 @@ namespace MinecraftClone.World_CS.Utility.Threading
         {
             while(!PendingShutdown)
             {
-                ThreadTaskRequest currentTask = null;
+                ThreadTaskRequest CurrentTask = null;
 
                 if (TasksAssigned.Count > 0 && !BIsPaused)
                 {
@@ -65,7 +65,7 @@ namespace MinecraftClone.World_CS.Utility.Threading
                     }
                     lock (TaskAccessLock)
                     {
-                        currentTask = TasksAssigned[0];
+                        CurrentTask = TasksAssigned[0];
                         TasksAssigned.RemoveAt(0);
                     }
                 }
@@ -78,10 +78,10 @@ namespace MinecraftClone.World_CS.Utility.Threading
                     }
                 }
 
-                if (currentTask != null)
+                if (CurrentTask != null)
                 {
-                    currentTask.Result = currentTask.Method();
-                    currentTask.BHasRun = true;
+                    CurrentTask.Result = CurrentTask.Method();
+                    CurrentTask.BHasRun = true;
                 }
             }
         }

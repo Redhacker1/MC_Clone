@@ -16,9 +16,9 @@ namespace MinecraftClone.World_CS.Utility.Threading
         
 
 
-        public ThreadTaskRequest(Func<object> method)
+        public ThreadTaskRequest(Func<object> Method)
         {
-            Method = method;
+            this.Method = Method;
         }
     }
 }
