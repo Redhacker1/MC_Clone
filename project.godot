@@ -21,6 +21,12 @@ window/per_pixel_transparency/allowed=true
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
 
+[global]
+
+mono=false
+ide=false
+editor=false
+
 [importer_defaults]
 
 texture={
@@ -109,6 +115,7 @@ console={
 
 [mono]
 
+unhandled_exception_policy=1
 profiler/enabled=true
 
 [physics]

@@ -4,6 +4,7 @@ using MinecraftClone.Player_CS;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
 using MinecraftClone.World_CS.Utility.IO;
+using System;
 
 namespace MinecraftClone.World_CS.Utility
 {
@@ -15,7 +16,7 @@ namespace MinecraftClone.World_CS.Utility
 		int _chunkZ = 1;
 		Player _player;
 
-		public Logger Logger = new Logger(@"C:\Users\Donovan\Documents\GitHub\MC_Clone\Logs", "DebugFile", ConsoleLibrary.DebugPrint);
+		public Logger Logger = new Logger(System.IO.Path.Combine(OS.GetExecutablePath().GetBaseDir(),"Logs"), "DebugFile", ConsoleLibrary.DebugPrint);
 
 		ProcWorld _pw;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Godot;
+using Directory = System.IO.Directory;
 using File = System.IO.File;
 using Path = System.IO.Path;
 using Thread = System.Threading.Thread;
@@ -47,6 +48,11 @@ namespace MinecraftClone.Debug_and_Logging
             GD.Print(creationTime);
 
             _workingFile = Path.Combine(filepath, fileName +"_"+creationTime+".log");
+            
+            if (!Directory.Exists(filepath))
+            {
+                Directory.CreateDirectory(filepath);
+            }
             File.Create(_workingFile).Close();
 
             Thread loggingThread = new Thread(ThreadLoop);
