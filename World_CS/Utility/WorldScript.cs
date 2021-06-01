@@ -9,12 +9,13 @@ namespace MinecraftClone.World_CS.Utility
 {
 	public class WorldScript : Node
 	{
-		MeshInstance _blockOutline;
 		Vector2 _chunkPos;
 
 		int _chunkX = 1;
 		int _chunkZ = 1;
 		Player _player;
+
+		public Logger Logger = new Logger(@"C:\Users\Donovan\Documents\GitHub\MC_Clone\Logs", "DebugFile", ConsoleLibrary.DebugPrint);
 
 		ProcWorld _pw;
 
@@ -26,13 +27,13 @@ namespace MinecraftClone.World_CS.Utility
 			WorldData worldPath = WorldManager.CreateWorld();
 			_player = GetNode<KinematicBody>("Player") as Player;
 			ConsoleLibrary.DebugPrint("CREATING WORLD");
-			_pw = new ProcWorld {World = worldPath};
+			_pw = new ProcWorld {World = worldPath, Initializer = this};
 
 			AddChild(_pw);
 			Connect("tree_exiting", this, "_on_WorldScript_tree_exiting");
 			
 			_player.World = _pw;
-			_player.GameManager = this;
+			//_player.GameManager = this;
 		}
 
 		void _on_WorldScript_tree_exiting()
@@ -56,6 +57,7 @@ namespace MinecraftClone.World_CS.Utility
 			Vector2 newChunkPos = new Vector2(_chunkX, _chunkZ);
 
 			if (newChunkPos == _chunkPos) return;
+			GD.Print("Chunk Updated");
 			_chunkPos = newChunkPos;
 			_pw.update_player_pos(_chunkPos);
 		}

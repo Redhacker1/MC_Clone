@@ -14,22 +14,19 @@ namespace MinecraftClone.Player_CS
         public Control Console;
         
         
-        public WorldScript GameManager;
         public ProcWorld World;
-
-        Vector3 CubeLocation;
 
         const float MouseSensitivity = 0.3f;
         const float Gravity = 9.8f;
-        float _cameraXRotation = 0f;
+        float _cameraXRotation;
 
         string _selectedBlock = string.Empty;
         
         const int Speed = 5;
         const int JumpVel = 5;
-        int _selectedBlockIndex = 0;
+        int _selectedBlockIndex;
 
-        bool _paused = false;
+        bool _paused;
 
         Vector3 _velocity = Vector3.Zero;
 
@@ -50,7 +47,6 @@ namespace MinecraftClone.Player_CS
         
         public override void _Ready()
         {
-            
             
             // Facinating
             BlockHelper.RegisterBaseBlocks();
@@ -123,7 +119,7 @@ namespace MinecraftClone.Player_CS
                 _velocity.z = direction.z * Speed;
             }
 
-            _velocity.y -= Gravity * delta;
+            //_velocity.y -= Gravity * delta;
             _velocity = MoveAndSlide(_velocity, Vector3.Up);
 
 
@@ -189,10 +185,6 @@ namespace MinecraftClone.Player_CS
                         
                     }
                 }
-                else
-                {
-                    
-                }
             }
         }
         
@@ -241,7 +233,7 @@ namespace MinecraftClone.Player_CS
             double pz = Mathf.Floor(Translation.z) + 0.5;
             
             
-            CubeLocation = new Vector3((float) (bx - px), (float) (by - py), (float) (bz - pz));
+            //CubeLocation = new Vector3((float) (bx - px), (float) (by - py), (float) (bz - pz));
 
         }
         

@@ -8,16 +8,6 @@
 
 config_version=4
 
-_global_script_classes=[ {
-"base": "Node",
-"class": "ChunkGenerator",
-"language": "GDScript",
-"path": "res://World_GD/generation/chunk_generators/BaseGenerator.gd"
-} ]
-_global_script_class_icons={
-"ChunkGenerator": ""
-}
-
 [application]
 
 config/name="Minecraft Clone"
@@ -123,11 +113,11 @@ profiler/enabled=true
 
 [physics]
 
-3d/physics_engine="Bullet"
+3d/godot_physics/use_bvh=false
 
 [rendering]
 
-quality/driver/fallback_to_gles2=true
+threads/thread_model=2
 quality/subsurface_scattering/quality=0
 quality/subsurface_scattering/scale=0
 quality/subsurface_scattering/weight_samples=false

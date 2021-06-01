@@ -1,7 +1,6 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://Player_CS/Player.cs" type="Script" id=1]
-[ext_resource path="res://Player_GD/Crosshair.gd" type="Script" id=2]
 [ext_resource path="res://assets/crosshair.png" type="Texture" id=3]
 [ext_resource path="res://Scenes/Console.tscn" type="PackedScene" id=4]
 
@@ -9,9 +8,9 @@
 radius = 0.5
 mid_height = 0.8
 
-[sub_resource type="CylinderShape" id=2]
-radius = 0.5
-height = 1.8
+[sub_resource type="BoxShape" id=2]
+margin = 0.001
+extents = Vector3( 0.4, 1, 0.4 )
 
 [node name="Player" type="KinematicBody"]
 script = ExtResource( 1 )
@@ -37,7 +36,6 @@ cast_to = Vector3( 0, 0, -5 )
 [node name="Sprite" type="Sprite" parent="CameraBase/Camera"]
 scale = Vector2( 2, 2 )
 texture = ExtResource( 3 )
-script = ExtResource( 2 )
 
 [node name="Label" type="Label" parent="CameraBase/Camera"]
 margin_right = 40.0

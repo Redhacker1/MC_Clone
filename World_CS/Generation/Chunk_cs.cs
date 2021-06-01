@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -6,6 +7,7 @@ using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Chunk_Generator_cs;
+using MinecraftClone.World_CS.Utility.JavaImports;
 
 namespace MinecraftClone.World_CS.Generation
 {
@@ -13,6 +15,8 @@ namespace MinecraftClone.World_CS.Generation
 	{
 		const int GenHeight = 60;
 		const int BlockOffset = 0;
+
+		readonly object _collisionLock = new object();
 		
 		public bool ChunkDirty = true;
 
@@ -20,14 +24,13 @@ namespace MinecraftClone.World_CS.Generation
 
 		public readonly Dictionary<Vector2, ChunkCs> NeighbourChunks = new Dictionary<Vector2, ChunkCs>();
 
-		static readonly RandomNumberGenerator Rng = new RandomNumberGenerator();
+		static readonly Random Rng = new Random();
 
 		static readonly Vector2 TextureAtlasSize = new Vector2(8, 4);
 
 		readonly SpatialMaterial _mat = (SpatialMaterial) GD.Load("res://assets/TextureAtlasMaterial.tres");
 
 		readonly MeshInstance _blockMeshInstance = new MeshInstance();
-		readonly MeshInstance _foliageMeshInstance = new MeshInstance();
 
 		readonly ConcavePolygonShape _collisionShapeClass = new ConcavePolygonShape();
 		readonly CollisionShape _shape = new CollisionShape();
@@ -42,7 +45,7 @@ namespace MinecraftClone.World_CS.Generation
 			new Vector3(0, 0, 1), //4
 			new Vector3(1, 0, 1), //5
 			new Vector3(0, 1, 1), //6
-			new Vector3(1, 1, 1) //7
+			new Vector3(1, 1, 1)  //7
 		};
 
 		static readonly int[] Top = {2, 3, 7, 6};
@@ -61,6 +64,7 @@ namespace MinecraftClone.World_CS.Generation
 		readonly BaseGenerator _generator = new ForestGenerator();
 
 		public byte[] BlockData = new byte[(int) Dimension.x * (int) Dimension.y * (int) Dimension.z];
+		//public byte[] BlockVisible = new byte[(int) Dimension.x * (int) Dimension.y * (int) Dimension.z];
 
 		public ProcWorld World;
 		public int Seed;
@@ -75,7 +79,7 @@ namespace MinecraftClone.World_CS.Generation
 			World = W;
 			Seed = (int) (Cx * 1000 + Cz);
 			
-			Rng.Seed = (ulong) Seed;
+			Rng.SetSeed(Seed);
 
 			int[,] GroundHeight = new int[(int)Dimension.x, (int)Dimension.x];
 
@@ -95,17 +99,18 @@ namespace MinecraftClone.World_CS.Generation
 		}
 
 		// HUGE HACK: This restricts the method to only running on one thread at a time, this will make threadpooling this impossible later
-		[MethodImpl(MethodImplOptions.Synchronized)]
 		public void Update()
 		{
-			
+			Stopwatch Watch = Stopwatch.StartNew();
+
 			List<Vector3> Blocks = new List<Vector3>();
 			List<Vector3> BlocksNormals = new List<Vector3>();
 			List<Vector2>  UVs = new List<Vector2>();
 			List<Vector3> CollisionData = new List<Vector3>();
 			
 			ArrayMesh BlockArrayMesh = new ArrayMesh();
-
+			
+			
 			//Making use of multidimensional arrays allocated on creation, should speed up this process significantly
 			for (int X = 0; X < Dimension.x; X++)
 			for (int Y = 0; Y < Dimension.y; Y++)
@@ -121,23 +126,31 @@ namespace MinecraftClone.World_CS.Generation
 					}
 				}
 			}
-			
+
 			Godot.Collections.Array MeshInstance = new Godot.Collections.Array();
 			MeshInstance.Resize((int) ArrayMesh.ArrayType.Max);
 			
-			MeshInstance[(int)ArrayMesh.ArrayType.Vertex] = Blocks.ToArray();
+			MeshInstance[(int)ArrayMesh.ArrayType.Vertex] = Blocks.ToArray(); 
 			MeshInstance[(int)ArrayMesh.ArrayType.TexUv] = UVs.ToArray();
 			MeshInstance[(int) ArrayMesh.ArrayType.Normal] = BlocksNormals.ToArray();
 			BlockArrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, MeshInstance);
 			BlockArrayMesh.SurfaceSetMaterial(0, _mat);
 			
 			_blockMeshInstance.Mesh = BlockArrayMesh;
-
-
-			PhysicsServer.ShapeSetData(_collisionShapeClass.GetRid(),CollisionData.ToArray());
-
-			//ConsoleLibrary.DebugPrint(stopwatch.ElapsedMilliseconds.ToString());
 			
+			//CallDeferred("UpdateCollisions_Deferred", CollisionData.ToArray());
+
+			ConsoleLibrary.DebugPrint(Watch.ElapsedMilliseconds);
+
+
+		}
+
+		void UpdateCollisions_Deferred(IEnumerable CollisionData)
+		{
+			if (_collisionShapeClass != null)
+			{
+				PhysicsServer.ShapeSetData(_collisionShapeClass.GetRid(),CollisionData);		
+			}
 		}
 		
 		// Called when the node enters the scene tree for the first time.
@@ -145,10 +158,10 @@ namespace MinecraftClone.World_CS.Generation
 		{
 			_mat.AlbedoTexture.Flags = 2;
 			
-			AddChild(_foliageMeshInstance);
 			AddChild(_blockMeshInstance);
-			AddChild(_shape);
 			_shape.Shape = _collisionShapeClass;
+			AddChild(_shape);
+
 		}
 
 		public void _set_block_data(int X, int Y, int Z, byte B, bool Overwrite = true, bool UpdateSurrounding = false)
@@ -188,7 +201,6 @@ namespace MinecraftClone.World_CS.Generation
 
 		bool[] check_transparent_neighbours(int X, int Y, int Z)
 		{
-			
 			return new[]
 			{
 				is_block_transparent(X, Y + 1, Z), is_block_transparent(X, Y - 1, Z), is_block_transparent(X - 1, Y, Z),
@@ -239,27 +251,30 @@ namespace MinecraftClone.World_CS.Generation
 			Vector2 UvC = new Vector2(1.0f / TextureAtlasSize.x, 1.0f / TextureAtlasSize.y) + UvOffset;
 			Vector2 UvD = new Vector2(1.0f / TextureAtlasSize.x, 0) + UvOffset;
 			
-			Blocks.AddRange(new[] {A, B, C});
-			Blocks.AddRange(new[] {A, C, D});
+			Blocks.AddRange(new[] {A, B, C, A, C, D});
 
-			UVs.AddRange(new[] {UvA, UvB, UvC});
-			UVs.AddRange(new[] {UvA, UvC, UvD});
-				
+			UVs.AddRange(new[] {UvA, UvB, UvC, UvA, UvC, UvD});
+
 			BlocksNormals.AddRange(NormalGenerate(A,B,C));
-			BlocksNormals.AddRange(NormalGenerate(A,B,C));
+			BlocksNormals.AddRange(NormalGenerate(A,C,D));
 			
 			if (!NoCollision)
 			{
-				CollisionData?.AddRange(new List<Vector3>() {A, B, C});
-				CollisionData?.AddRange(new List<Vector3>() {A, C, D});
+				CollisionData?.AddRange(new List<Vector3>() {A, B, C, A, C, D});
 			}
 		}
-		
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static IEnumerable<Vector3> NormalGenerate(Vector3 A, Vector3 B, Vector3 C)
 		{
-			// HACK: Actually calculate normals this only works for cubes
-			Plane Vertexplane = new Plane(A, B, C);
-			return new[] {Vertexplane.Normal, Vertexplane.Normal, Vertexplane.Normal};
+			// HACK: Actually calculate normals as this only works for cubes
+
+			Vector3 Qr = C - A;
+			Vector3 Qs = B - A;
+
+			Vector3 Normal = new Vector3((Qr.y * Qs.z) - (Qr.z * Qs.y),(Qr.z * Qs.x) - (Qr.x * Qs.z), (Qr.x * Qs.y) - (Qr.y * Qs.x) );
+
+			return new[] {Normal, Normal, Normal};
 
 		}
 

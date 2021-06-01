@@ -1,6 +1,6 @@
 ﻿using System;
-using Godot;
 using MinecraftClone.World_CS.Generation.Noise;
+using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
 
 namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 {
@@ -20,7 +20,7 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
             
         }
 
-        public virtual void generate_details(ChunkCs Chunk, RandomNumberGenerator Rng, int[,] GroundHeight, bool CheckingInterChunkGen = true)
+        public virtual void generate_details(ChunkCs Chunk, Random Rng, int[,] GroundHeight, bool CheckingInterChunkGen = true)
         {
         }
 

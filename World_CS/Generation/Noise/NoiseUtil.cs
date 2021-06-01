@@ -134,8 +134,8 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
             public Float2(float x, float y)
             {
-                this.X = x;
-                this.Y = y;
+                X = x;
+                Y = y;
             }
         }
 
@@ -145,9 +145,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
             public Float3(float x, float y, float z)
             {
-                this.X = x;
-                this.Y = y;
-                this.Z = z;
+                X = x;
+                Y = y;
+                Z = z;
             }
         }
 

@@ -1,5 +1,6 @@
 using Godot;
 using MinecraftClone.World_CS.Generation.Noise;
+using MinecraftClone.World_CS.Utility.JavaImports;
 
 namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 {
@@ -20,31 +21,30 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 			HeightNoise.SetFractalOctaves(100);
 
             int Depth = (int) Mathf.Lerp(1,6,Mathf.Abs(HeightNoise.GetSimplex(X + Chunk.ChunkCoordinate.x,Chunk.Seed,Z + Chunk.ChunkCoordinate.y)));
-            //GD.Print(depth);
 
             for (int I = 0; I < Depth; I++)
 			{
 				if (I == 0)
 				{
-					Chunk._set_block_data(X,Height, Z, 4);	
+					Chunk._set_block_data(X,Height - 1, Z, 4);	
 				}
 				else
 				{
-					Chunk._set_block_data(X,Height - I, Z,4);	
+					Chunk._set_block_data(X,(Height - 1) - I, Z,4);	
 				}
 			}
 		}
 
-		public override void generate_details(ChunkCs Chunk, RandomNumberGenerator Rng, int[,] GroundHeight, bool CheckingInterChunkGen = true)
+		public override void generate_details(ChunkCs Chunk, Random Rng, int[,] GroundHeight, bool CheckingInterChunkGen = true)
 		{
 
 			const int treeWidth = 2;
 
-			for (int NTree = 0; NTree < Rng.RandiRange(2, 8); NTree++)
+			for (int NTree = 0; NTree < Rng.NextInt(2, 8); NTree++)
 			{
-				int PosX = Rng.RandiRange(treeWidth, (int) ChunkCs.Dimension.x - treeWidth - 1);
-				int PosZ = Rng.RandiRange(treeWidth, (int) ChunkCs.Dimension.x - treeWidth - 1);
-				int TreeHeight = Rng.RandiRange(4, 8);
+				int PosX = Rng.NextInt(treeWidth, (int) ChunkCs.Dimension.x - treeWidth - 1);
+				int PosZ = Rng.NextInt(treeWidth, (int) ChunkCs.Dimension.x - treeWidth - 1);
+				int TreeHeight = Rng.NextInt(4, 8);
 				
 				for (int I = 0; I < TreeHeight; I++)
 				{
@@ -57,9 +57,9 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 					// 6 is BID for logs
 					Chunk._set_block_data(X, Y, Z, 6);
 				}
-				int MinY = Rng.RandiRange(-2, -1);
+				int MinY = Rng.NextInt(-2, -1);
 
-				int MaxY = Rng.RandiRange(2, 4);
+				int MaxY = Rng.NextInt(2, 4);
 
 				for (int Dy = MinY; Dy < MaxY; Dy++)
 				{
@@ -82,10 +82,10 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 					}
 				}
 
-				for (int NShrub = 0; NShrub < Rng.RandiRange(6, 10); NShrub++)
+				for (int NShrub = 0; NShrub < Rng.NextInt(6, 10); NShrub++)
 				{
-					int X = Rng.RandiRange(0, (int)ChunkCs.Dimension.x - 1);
-					int Z = Rng.RandiRange(0, (int)ChunkCs.Dimension.x - 1);
+					int X = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
+					int Z = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
 					int Y = GroundHeight[X,Z];
 					
 					// 11 is block ID for tall grass
@@ -95,10 +95,10 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 					}
 				}
 
-				for (int NFlower = 0; NFlower < Rng.RandiRange(4, 6); NFlower++)
+				for (int NFlower = 0; NFlower < Rng.NextInt(4, 6); NFlower++)
 				{
-					int X = Rng.RandiRange(0, (int)ChunkCs.Dimension.x - 1);
-					int Z = Rng.RandiRange(0, (int)ChunkCs.Dimension.x - 1);
+					int X = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
+					int Z = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
 					int Y = GroundHeight[X,Z];
 					
 					// 3 is BID for flower

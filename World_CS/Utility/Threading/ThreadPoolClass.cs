@@ -19,11 +19,11 @@ namespace MinecraftClone.World_CS.Utility.Threading
         /// Sets the threadpool up to be used
         /// </summary>
         /// <param name="threads"> Threads to use in threadpool leave at 0 if unsure </param>
-        public void InitializePool(byte threads = 0)
+        public void InitializePool(byte threads = 0, byte subtractVal = 3)
         {
             if (threads == 0)
             {
-                Threads = (byte)Environment.ProcessorCount;
+                Threads = (byte) (Environment.ProcessorCount - subtractVal);
             }
             else
             {

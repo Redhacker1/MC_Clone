@@ -5,6 +5,7 @@ using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Noise;
+using MinecraftClone.World_CS.Utility;
 using MinecraftClone.World_CS.Utility.IO;
 using MinecraftClone.World_CS.Utility.Threading;
 using Thread = System.Threading.Thread;
@@ -15,10 +16,15 @@ namespace MinecraftClone.World_CS.Generation
 	{
 
 		ThreadPoolClass Threads = new ThreadPoolClass();
-		const int LoadRadius = 16;
-		readonly object _chunkMutex = new object();
+		
+		//
+		int LoadRadius = 16;
 
-		 public WorldData World;
+		readonly object _chunkMutex = new object(); 
+		
+		public WorldData World;
+
+		public WorldScript Initializer;
 
 		public readonly Dictionary<Vector2, ChunkCs> LoadedChunks = new Dictionary<Vector2, ChunkCs>();
 
@@ -37,6 +43,7 @@ namespace MinecraftClone.World_CS.Generation
 
 		public override void _Ready()
 		{
+			
 			ConsoleLibrary.DebugPrint("Starting procworld");
 			
 			ConsoleLibrary.DebugPrint("Preparing Threadpool");
@@ -65,7 +72,7 @@ namespace MinecraftClone.World_CS.Generation
 
 		void _thread_gen()
 		{
-			GD.Print("Thread Running");
+			ConsoleLibrary.DebugPrint("ThreadGen Thread Running");
 			while (!_bKillThread)
 			{
 				bool PlayerPosUpdated = _newChunkPos != _chunkPos;
@@ -158,12 +165,12 @@ namespace MinecraftClone.World_CS.Generation
 					C = new ChunkCs();
 					C.Generate(this, Cx, Cz, Vector3.Zero);	
 				}
-				C.Update();
-				CallDeferred("add_child", C);
 				lock (_chunkMutex)
 				{
 					LoadedChunks[Cpos] = C;
 				}
+				CallDeferred("add_child", C);
+				_update_chunk(Cx, Cz);
 			}
 			return Cpos;
 		}
@@ -172,7 +179,7 @@ namespace MinecraftClone.World_CS.Generation
 		{
 			ChunkCs[] Chunks = LoadedChunks.Values.ToArray();
 
-			foreach (var chunk in Chunks)
+			foreach (ChunkCs chunk in Chunks)
 			{
 				if (chunk != null)
 				{
@@ -200,18 +207,22 @@ namespace MinecraftClone.World_CS.Generation
 			if (C.BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)] != T)
 			{
 				ConsoleLibrary.DebugPrint($"Changed block at {Bx} {By} {Bz} in chunk {Cx}, {Cz}");
-				C._set_block_data(Bx,By,Bz,T, UpdateSurrounding: true);
-				C.Update();
+				C?._set_block_data(Bx,By,Bz,T, UpdateSurrounding: true);
+				_update_chunk(Cx, Cz);
 			}
 		}
 
 		Vector2 _update_chunk(int Cx, int Cz)
 		{
 			Vector2 Cpos = new Vector2(Cx, Cz);
-			lock (_chunkMutex)
+			Threads.AddRequest(()=>
 			{
-				LoadedChunks[Cpos].Update();
-			}
+				if (LoadedChunks.ContainsKey(Cpos))
+				{
+					LoadedChunks[Cpos]?.Update();	
+				}
+				return null;
+			});
 
 			return Cpos;
 		}
@@ -238,7 +249,6 @@ namespace MinecraftClone.World_CS.Generation
 					lock (_chunkMutex)
 					{
 						SaveFileHandler.WriteChunkData(LoadedChunks[Cpos].BlockData, LoadedChunks[Cpos].ChunkCoordinate, World);
-						//PhysicsServer.FreeRid(LoadedChunks[Cpos].GetRid());
 						LoadedChunks[Cpos].QueueFree();
 						LoadedChunks.Remove(Cpos);
 					}	
@@ -258,8 +268,12 @@ namespace MinecraftClone.World_CS.Generation
 		}
 		
 		public void SaveAndQuit()
-        {
-        	lock (_chunkMutex)
+		{
+			if (GetTree() != null)
+			{
+				GetTree().Paused = true;	
+			}
+			lock (_chunkMutex)
             {
 	            ConsoleLibrary.DebugPrint("Saving Chunks");
 
@@ -285,6 +299,11 @@ namespace MinecraftClone.World_CS.Generation
 	            }
 	            CallDeferred("kill_thread");
             }
-        }
+
+			if (GetTree() != null)
+			{
+				GetTree().Paused = false;
+			}
+		}
 	}
 }
