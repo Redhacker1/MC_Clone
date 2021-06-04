@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,18 +8,18 @@ using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Chunk_Generator_cs;
-using MinecraftClone.World_CS.Utility.JavaImports;
+using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
 
 namespace MinecraftClone.World_CS.Generation
 {
-	public class ChunkCs : StaticBody
+	public class ChunkCs : Spatial
 	{
+
+
 		const int GenHeight = 60;
 		const int BlockOffset = 0;
 
 		readonly object _collisionLock = new object();
-		
-		public bool ChunkDirty = true;
 
 		public Vector2 ChunkCoordinate;
 
@@ -31,9 +32,6 @@ namespace MinecraftClone.World_CS.Generation
 		readonly SpatialMaterial _mat = (SpatialMaterial) GD.Load("res://assets/TextureAtlasMaterial.tres");
 
 		readonly MeshInstance _blockMeshInstance = new MeshInstance();
-
-		readonly ConcavePolygonShape _collisionShapeClass = new ConcavePolygonShape();
-		readonly CollisionShape _shape = new CollisionShape();
 
 
 		static readonly Vector3[] V =
@@ -64,11 +62,12 @@ namespace MinecraftClone.World_CS.Generation
 		readonly BaseGenerator _generator = new ForestGenerator();
 
 		public byte[] BlockData = new byte[(int) Dimension.x * (int) Dimension.y * (int) Dimension.z];
-		//public byte[] BlockVisible = new byte[(int) Dimension.x * (int) Dimension.y * (int) Dimension.z];
+		public readonly bool[,,] VisibilityMask = new bool[(int) Dimension.x, (int) Dimension.y, (int) Dimension.z];
 
 		public ProcWorld World;
 		public int Seed;
-		
+		public bool ChunkDirty = false;
+
 
 		public void Generate(ProcWorld W, float Cx, float Cz, Vector3 PosOffset)
 		{
@@ -96,6 +95,8 @@ namespace MinecraftClone.World_CS.Generation
 			}
 			_generator.generate_details(this, Rng, GroundHeight);
 			_generator.Generate_Caves(this,Seed, GroundHeight);
+
+
 		}
 
 		// HUGE HACK: This restricts the method to only running on one thread at a time, this will make threadpooling this impossible later
@@ -106,8 +107,7 @@ namespace MinecraftClone.World_CS.Generation
 			List<Vector3> Blocks = new List<Vector3>();
 			List<Vector3> BlocksNormals = new List<Vector3>();
 			List<Vector2>  UVs = new List<Vector2>();
-			List<Vector3> CollisionData = new List<Vector3>();
-			
+
 			ArrayMesh BlockArrayMesh = new ArrayMesh();
 			
 			
@@ -122,7 +122,7 @@ namespace MinecraftClone.World_CS.Generation
 					bool[] Check = check_transparent_neighbours(X, Y, Z);
 					if (Check.Contains(true))
 					{
-						_create_block(Check, X, Y, Z, Block, Blocks, BlocksNormals, UVs, CollisionData);	
+						_create_block(Check, X, Y, Z, Block, Blocks, BlocksNormals, UVs);	
 					}
 				}
 			}
@@ -137,19 +137,18 @@ namespace MinecraftClone.World_CS.Generation
 			BlockArrayMesh.SurfaceSetMaterial(0, _mat);
 			
 			_blockMeshInstance.Mesh = BlockArrayMesh;
-			
-			//CallDeferred("UpdateCollisions_Deferred", CollisionData.ToArray());
-
-			ConsoleLibrary.DebugPrint(Watch.ElapsedMilliseconds);
 
 
 		}
 
-		void UpdateCollisions_Deferred(IEnumerable CollisionData)
+
+		public void UpdateVisMask()
 		{
-			if (_collisionShapeClass != null)
+			for (int X = 0; X < Dimension.x; X++)
+			for (int Y = 0; Y < Dimension.y; Y++)
+			for (int Z = 0; Z < Dimension.z; Z++)
 			{
-				PhysicsServer.ShapeSetData(_collisionShapeClass.GetRid(),CollisionData);		
+				VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[BlockData[GetFlattenedDimension(X,Y,Z)]].Transparent;
 			}
 		}
 		
@@ -159,8 +158,6 @@ namespace MinecraftClone.World_CS.Generation
 			_mat.AlbedoTexture.Flags = 2;
 			
 			AddChild(_blockMeshInstance);
-			_shape.Shape = _collisionShapeClass;
-			AddChild(_shape);
 
 		}
 
@@ -171,6 +168,8 @@ namespace MinecraftClone.World_CS.Generation
 				if (Overwrite || BlockData[GetFlattenedDimension(X, Y, Z)] == 0)
 				{
 					BlockData[GetFlattenedDimension(X, Y, Z)] = B;
+
+					VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[B].Transparent;
 					ChunkDirty = true;
 				}
 			}
@@ -208,30 +207,30 @@ namespace MinecraftClone.World_CS.Generation
 			};
 		}
 
-		public static void _create_block(bool[] Check, int X, int Y, int Z, byte Block, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs, List<Vector3> CollisionData)
+		public static void _create_block(bool[] Check, int X, int Y, int Z, byte Block, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs)
 		{
 			bool NoCollision = BlockHelper.block_have_collision(Block);
 			List<BlockStruct> BlockTypes = BlockHelper.BlockTypes;
 			if (BlockTypes[Block].TagsList.Contains("Flat"))
 			{
-				create_face(Cross1, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				create_face(Cross2, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				create_face(Cross3, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				create_face(Cross4, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
+				create_face(Cross1, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
+				create_face(Cross2, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
+				create_face(Cross3, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
+				create_face(Cross4, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
 			}
 			else
 			{
-				if (Check[0]) create_face(Top, X, Y, Z, BlockTypes[Block].Top, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				if (Check[1]) create_face(Bottom, X, Y, Z, BlockTypes[Block].Bottom, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				if (Check[2]) create_face(Left, X, Y, Z, BlockTypes[Block].Left, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				if (Check[3]) create_face(Right, X, Y, Z, BlockTypes[Block].Right, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				if (Check[4]) create_face(Back, X, Y, Z, BlockTypes[Block].Back, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
-				if (Check[5]) create_face(Front, X, Y, Z, BlockTypes[Block].Front, NoCollision, Blocks, BlocksNormals, UVs, CollisionData);
+				if (Check[0]) create_face(Top, X, Y, Z, BlockTypes[Block].Top, NoCollision, Blocks, BlocksNormals, UVs);
+				if (Check[1]) create_face(Bottom, X, Y, Z, BlockTypes[Block].Bottom, NoCollision, Blocks, BlocksNormals, UVs);
+				if (Check[2]) create_face(Left, X, Y, Z, BlockTypes[Block].Left, NoCollision, Blocks, BlocksNormals, UVs);
+				if (Check[3]) create_face(Right, X, Y, Z, BlockTypes[Block].Right, NoCollision, Blocks, BlocksNormals, UVs);
+				if (Check[4]) create_face(Back, X, Y, Z, BlockTypes[Block].Back, NoCollision, Blocks, BlocksNormals, UVs);
+				if (Check[5]) create_face(Front, X, Y, Z, BlockTypes[Block].Front, NoCollision, Blocks, BlocksNormals, UVs);
 			}
 		}
 
 		static void create_face(IReadOnlyList<int> I, int X, int Y, int Z, Vector2 TextureAtlasOffset,
-			bool NoCollision, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs, List<Vector3> CollisionData)
+			bool NoCollision, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs)
 		{
 			Vector3 Offset = new Vector3(X, Y, Z);
 
@@ -257,11 +256,6 @@ namespace MinecraftClone.World_CS.Generation
 
 			BlocksNormals.AddRange(NormalGenerate(A,B,C));
 			BlocksNormals.AddRange(NormalGenerate(A,C,D));
-			
-			if (!NoCollision)
-			{
-				CollisionData?.AddRange(new List<Vector3>() {A, B, C, A, C, D});
-			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -291,7 +285,7 @@ namespace MinecraftClone.World_CS.Generation
 				return true;
 			}
 
-			return BlockHelper.BlockTypes[BlockData[GetFlattenedDimension(X, Y, Z)]].Transparent;
+			return VisibilityMask[X,Y,Z];
 		}
 	}
 }

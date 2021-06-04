@@ -18,7 +18,7 @@ namespace MinecraftClone.World_CS.Utility
 
 		public Logger Logger = new Logger(System.IO.Path.Combine(OS.GetExecutablePath().GetBaseDir(),"Logs"), "DebugFile", ConsoleLibrary.DebugPrint);
 
-		ProcWorld _pw;
+		static public ProcWorld _pw;
 
 		// Called when the node enters the scene tree for the first time.
 		public override void _Ready()
@@ -26,7 +26,9 @@ namespace MinecraftClone.World_CS.Utility
 			BlockHelper.RegisterBaseBlocks();
 			WorldManager.FindWorlds();
 			WorldData worldPath = WorldManager.CreateWorld();
-			_player = GetNode<KinematicBody>("Player") as Player;
+			_player = GetNode<Node>("Player") as Player;
+			_player.level = _pw;
+
 			ConsoleLibrary.DebugPrint("CREATING WORLD");
 			_pw = new ProcWorld {World = worldPath, Initializer = this};
 
@@ -52,8 +54,8 @@ namespace MinecraftClone.World_CS.Utility
 		public override void _Process(float delta)
 		{
 			if (_player == null || _pw?.Mutex == null) return;
-			_chunkX = (int) Mathf.Floor(_player.Translation.x / ChunkCs.Dimension.x);
-			_chunkZ = (int) Mathf.Floor(_player.Translation.z / ChunkCs.Dimension.x);
+			_chunkX = (int) Mathf.Floor(_player.Pos.x / ChunkCs.Dimension.x);
+			_chunkZ = (int) Mathf.Floor(_player.Pos.z / ChunkCs.Dimension.x);
 
 			Vector2 newChunkPos = new Vector2(_chunkX, _chunkZ);
 

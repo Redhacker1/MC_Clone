@@ -1,4 +1,4 @@
-using System;
+using MinecraftClone.World_CS.Utility.JavaImports;
 
 namespace MinecraftClone.World_CS.Generation.Noise
 {

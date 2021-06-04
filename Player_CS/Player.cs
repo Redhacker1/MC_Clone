@@ -2,10 +2,11 @@ using Godot;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
 using MinecraftClone.World_CS.Utility;
+using MinecraftClone.World_CS.Utility.Physics;
 
 namespace MinecraftClone.Player_CS
 {
-    public class Player : KinematicBody
+    public class Player : Entity
     {
         
         Camera _fpCam;
@@ -17,14 +18,16 @@ namespace MinecraftClone.Player_CS
         public ProcWorld World;
 
         const float MouseSensitivity = 0.3f;
-        const float Gravity = 9.8f;
+        public const float Gravity = 9.8f;
         float _cameraXRotation;
 
         string _selectedBlock = string.Empty;
         
-        const int Speed = 5;
-        const int JumpVel = 5;
+        public const int Speed = 5;
+        public const int JumpVel = 5;
         int _selectedBlockIndex;
+
+        PlayerController _controller;
 
         bool _paused;
 
@@ -47,7 +50,10 @@ namespace MinecraftClone.Player_CS
         
         public override void _Ready()
         {
-            
+
+            SetPos(new Vector3(Translation.x, Translation.y, Translation.z));
+            _controller = new PlayerController(this);
+
             // Facinating
             BlockHelper.RegisterBaseBlocks();
             
@@ -87,40 +93,7 @@ namespace MinecraftClone.Player_CS
 
             if (!_paused)
             {
-                if (Input.IsActionPressed("jump") && IsOnFloor())
-                {
-                    _velocity.y = JumpVel;
-                }
-
-                Basis cameraBaseBasis = Transform.basis;
-
-                Vector3 direction = new Vector3();
-
-                if (Input.IsActionPressed("forward"))
-                {
-                    direction -= cameraBaseBasis.z;
-                }
-                if (Input.IsActionPressed("backward"))
-                {
-                    direction += cameraBaseBasis.z;
-                }
-                
-                if (Input.IsActionPressed("left"))
-                {
-                    direction -= cameraBaseBasis.x;
-                }
-                
-                if (Input.IsActionPressed("right"))
-                {
-                    direction += cameraBaseBasis.x;
-                }
-
-                _velocity.x = direction.x * Speed;
-                _velocity.z = direction.z * Speed;
             }
-
-            //_velocity.y -= Gravity * delta;
-            _velocity = MoveAndSlide(_velocity, Vector3.Up);
 
 
             if (Input.IsActionJustReleased("scroll_up"))
@@ -159,12 +132,13 @@ namespace MinecraftClone.Player_CS
 
             if (!_paused)
             {
+                _controller.pmove(delta);
+
+
                 if (_raycast?.IsColliding() == true)
                 {
                     Vector3 pos = _raycast.GetCollisionPoint();
                     Vector3 norm = _raycast.GetCollisionNormal();
-                    
-                    _on_Player_highlight_block(pos, norm);
 
                     if (Input.IsActionJustPressed("click"))
                     {
@@ -177,7 +151,7 @@ namespace MinecraftClone.Player_CS
                         {
                             int by = (int) (Mathf.PosMod(Mathf.Round(pos.y + 1), ChunkCs.Dimension.y) + .5);
                             _on_Player_place_block(pos,norm, _selectedBlock);
-                            if (!IsOnFloor() )
+                            if (!OnGround )
                             {
                                 Translation = new Vector3(Translation.x, by + .5f, Translation.z);   
                             }

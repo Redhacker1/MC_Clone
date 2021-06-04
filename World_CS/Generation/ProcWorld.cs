@@ -9,16 +9,21 @@ using MinecraftClone.World_CS.Utility;
 using MinecraftClone.World_CS.Utility.IO;
 using MinecraftClone.World_CS.Utility.Threading;
 using Thread = System.Threading.Thread;
+using Vector2 = Godot.Vector2;
+using Vector3 = Godot.Vector3;
+using MinecraftClone.World_CS.Utility.Physics;
+using System.Numerics;
+using AABB = MinecraftClone.World_CS.Utility.Physics.AABB;
 
 namespace MinecraftClone.World_CS.Generation
 {
 	public class ProcWorld : Spatial
 	{
 
-		ThreadPoolClass Threads = new ThreadPoolClass();
+		ThreadPoolClass _threads = new ThreadPoolClass();
 		
 		//
-		int LoadRadius = 16;
+		int _loadRadius = 16;
 
 		readonly object _chunkMutex = new object(); 
 		
@@ -48,8 +53,8 @@ namespace MinecraftClone.World_CS.Generation
 			
 			ConsoleLibrary.DebugPrint("Preparing Threadpool");
 			// Starts the threadpool;
-			Threads.InitializePool();
-			Threads.IgniteThreadPool();
+			_threads.InitializePool();
+			_threads.IgniteThreadPool();
 			
 			ConsoleLibrary.DebugPrint("Registering Blocks");
 			// Sets the blocks used in the base game up.
@@ -115,7 +120,7 @@ namespace MinecraftClone.World_CS.Generation
 						else
 						{
 							// We increment here idk why
-							if (_currentLoadRadius < LoadRadius)
+							if (_currentLoadRadius < _loadRadius)
 							{
 								_currentLoadRadius++;
 							}
@@ -134,7 +139,7 @@ namespace MinecraftClone.World_CS.Generation
 						{
 							// Go down
 							// Stop the last one where we'd go over the limit
-							if (DeltaPos.y < LoadRadius)
+							if (DeltaPos.y < _loadRadius)
 							{
 								_lastChunk = _load_chunk((int) _lastChunk.x, (int) _lastChunk.y + 1);
 							}
@@ -169,28 +174,89 @@ namespace MinecraftClone.World_CS.Generation
 				{
 					LoadedChunks[Cpos] = C;
 				}
-				CallDeferred("add_child", C);
+
+				if (C != null)
+				{
+					CallDeferred("add_child", C);
+				}
+				C?.UpdateVisMask();
 				_update_chunk(Cx, Cz);
 			}
 			return Cpos;
 		}
 
-		public string ReloadChunks(params string[] args)
+		public string ReloadChunks(params string[] Args)
 		{
 			ChunkCs[] Chunks = LoadedChunks.Values.ToArray();
 
-			foreach (ChunkCs chunk in Chunks)
+			foreach (ChunkCs Chunk in Chunks)
 			{
-				if (chunk != null)
+				if (Chunk != null)
 				{
-					Threads.AddRequest(() =>
+					_threads.AddRequest(() =>
 					{
-						chunk?.Update();
+						Chunk?.Update();
 						return null;
 					});
 				}
 			}
 			return $"{Chunks.Length} Chunks sent to threadpool for processing...";
+		}
+
+
+		public List<AABB> Get_aabbs(int layer, AABB Aabb)
+		{
+			List<AABB> Aabbs = new List<AABB>();
+
+			Vector3 A = new Vector3(Aabb.A.x, Aabb.A.y, Aabb.A.z);
+			Vector3 B = new Vector3(Aabb.B.x + 1, Aabb.B.y + 1, Aabb.B.z + 1);
+
+			for (int Z = (int) A.z; Z < B.z; Z++)
+			{
+				for (int Y = (int) A.y; Y < B.y; Y++)
+				{
+					for (int X = (int) A.x; X < B.x; X++)
+					{
+						byte Block = GetBlockIdFromWorldPos(X, Y, Z);
+						if (!BlockHelper.BlockTypes[Block].NoCollision && Block != 0)
+						{
+							AABB C = new AABB(new Vector3(X, Y, Z), new Vector3(X + 1, Y + 1, Z + 1));
+							Aabbs.Add(C);
+						}
+					}
+				}
+			}
+			return Aabbs;
+		}
+
+
+		byte GetBlockIdFromWorldPos(int X, int Y, int Z)
+		{
+			float Cx = Mathf.Floor((X) / ChunkCs.Dimension.x);
+			float Cz = Mathf.Floor((Z) / ChunkCs.Dimension.x);
+			
+			int Bx = (int) (X - Cx * ChunkCs.Dimension.x);
+			int By = Y;
+			int Bz = (int) (Z - Cz * ChunkCs.Dimension.x);
+
+			if (LoadedChunks.ContainsKey(new Vector2(Cx, Cz)) && ValidPlace(Bx, By, Bz))
+			{
+
+				return LoadedChunks[new Vector2(Cx, Cz)].BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)];
+			}
+
+			return 0;
+		}
+
+
+		bool ValidPlace(int X, int Y, int Z)
+		{
+			if (X < 0 || X >= ChunkCs.Dimension.x || Z < 0 || Z >= ChunkCs.Dimension.z || Y < 0 || Y >= ChunkCs.Dimension.y)
+			{
+				return false;
+			}
+
+			return true;
 		}
 		
 		
@@ -215,7 +281,7 @@ namespace MinecraftClone.World_CS.Generation
 		Vector2 _update_chunk(int Cx, int Cz)
 		{
 			Vector2 Cpos = new Vector2(Cx, Cz);
-			Threads.AddRequest(()=>
+			_threads.AddRequest(()=>
 			{
 				if (LoadedChunks.ContainsKey(Cpos))
 				{
@@ -233,8 +299,8 @@ namespace MinecraftClone.World_CS.Generation
 			{
 				List<Vector2> KeyList = new List<Vector2>(LoadedChunks.Keys);
 				foreach (Vector2 Location in KeyList)
-					if (Math.Abs(Location.x - CurrentChunkPos.x) > LoadRadius ||
-						Math.Abs(Location.y - CurrentChunkPos.y) > LoadRadius)
+					if (Math.Abs(Location.x - CurrentChunkPos.x) > _loadRadius ||
+						Math.Abs(Location.y - CurrentChunkPos.y) > _loadRadius)
 						_unloadChunk((int) Location.x, (int) Location.y);
 			}
 		}
@@ -282,7 +348,7 @@ namespace MinecraftClone.World_CS.Generation
 	            {
 		            if (Chunk.Value.ChunkDirty)
 		            {
-			            Threads.AddRequest(() =>
+			            _threads.AddRequest(() =>
 			            {
 				            SaveFileHandler.WriteChunkData(Chunk.Value.BlockData,
 					            Chunk.Value.ChunkCoordinate, World);
@@ -293,7 +359,7 @@ namespace MinecraftClone.World_CS.Generation
 	            
 	            
 	            // Hack: this needs to be corrected.
-	            while (Threads.AllThreadsIdle() != true)
+	            while (_threads.AllThreadsIdle() != true)
 	            {
 		            
 	            }

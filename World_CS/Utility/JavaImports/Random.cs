@@ -2,7 +2,7 @@ using System;
 
 namespace MinecraftClone.World_CS.Utility.JavaImports
 {
-public class Random
+    public class Random
     {
         long _seed;
         double _nextNextGaussian;

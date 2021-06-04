@@ -115,12 +115,14 @@ console={
 
 [mono]
 
-unhandled_exception_policy=1
 profiler/enabled=true
 
 [physics]
 
+3d/active_soft_world=false
 3d/godot_physics/use_bvh=false
+3d/default_gravity=0.0
+common/enable_object_picking=false
 
 [rendering]
 
