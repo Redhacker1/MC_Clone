@@ -11,8 +11,9 @@ namespace MinecraftClone.Player_CS
             pawn = PawnReference;
         }
 
-        public void pmove(float delta)
+        public void Player_move(float delta)
         {
+
             //float xa = 0.0f, ya = 0.0f;
 
             Basis cameraBaseBasis = pawn.Transform.basis;
@@ -37,15 +38,25 @@ namespace MinecraftClone.Player_CS
             {
                 direction += cameraBaseBasis.x;
             }
+            
+            if (!pawn.OnGround)
+            {
+                _velocity.y -= .2f * delta;   
+            }
+            else
+            {
+                _velocity.y = 0;
+            }
 
 
             if (Input.IsActionPressed("jump") && pawn.OnGround)
             {
-                _velocity.y = .2f;
+                _velocity.y = 6f * delta;
             }
             _velocity.x = direction.x * Player.Speed * delta;
             _velocity.z = direction.z * Player.Speed * delta;
-            _velocity.y = _velocity.y - .01f;
+
+            pawn.Pos = _velocity;
             pawn.MoveRelative(_velocity.x, _velocity.z, Player.Speed);
             pawn.Move(_velocity);
         }

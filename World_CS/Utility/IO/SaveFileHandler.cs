@@ -10,10 +10,7 @@ namespace MinecraftClone.World_CS.Utility.IO
     public static class SaveFileHandler
     {
         // Possible Save Handlers
-        static readonly List<BaseFileHandler> ValidFormats = new List<BaseFileHandler>()
-            {
-                
-            };
+        static readonly List<BaseFileHandler> ValidFormats = new List<BaseFileHandler>();
         
         // TODO: Save files in reigon file
         static readonly BaseFileHandler DefaultSaveFileFormat = new ChunkFilesV1();

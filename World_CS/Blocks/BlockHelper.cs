@@ -62,7 +62,7 @@ namespace MinecraftClone.World_CS.Blocks
             List<string> woodTags = new List<string>();
             RegisterBlock(new Vector2(4, 0), woodTags, "Wood", 12);
             
-            List<string> borderTags = new List<string>() {"Unbreakable"};
+            List<string> borderTags = new List<string> {"Unbreakable"};
             RegisterBlock(new Vector2(4, 2), borderTags, "Barrier", 13);
             RegisterBlock(new Vector2(5, 0), borderTags, "Barrier_02", 14);
         }
@@ -102,7 +102,7 @@ namespace MinecraftClone.World_CS.Blocks
 
         }
 
-        public static void RegisterBlock(Vector2 sides, List<string> tags, string name, byte id)
+        static void RegisterBlock(Vector2 sides, ICollection<string> tags, string name, byte id)
         {
             BlockStruct block = new BlockStruct();
             if (tags.Contains("Transparent"))

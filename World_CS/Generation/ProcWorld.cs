@@ -7,13 +7,10 @@ using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Noise;
 using MinecraftClone.World_CS.Utility;
 using MinecraftClone.World_CS.Utility.IO;
-using MinecraftClone.World_CS.Utility.Threading;
-using Thread = System.Threading.Thread;
-using Vector2 = Godot.Vector2;
-using Vector3 = Godot.Vector3;
 using MinecraftClone.World_CS.Utility.Physics;
-using System.Numerics;
+using MinecraftClone.World_CS.Utility.Threading;
 using AABB = MinecraftClone.World_CS.Utility.Physics.AABB;
+using Thread = System.Threading.Thread;
 
 namespace MinecraftClone.World_CS.Generation
 {
@@ -187,18 +184,11 @@ namespace MinecraftClone.World_CS.Generation
 
 		public string ReloadChunks(params string[] Args)
 		{
-			ChunkCs[] Chunks = LoadedChunks.Values.ToArray();
+			Vector2[] Chunks = LoadedChunks.Keys.ToArray();
 
-			foreach (ChunkCs Chunk in Chunks)
+			foreach (Vector2 ChunkPos in Chunks)
 			{
-				if (Chunk != null)
-				{
-					_threads.AddRequest(() =>
-					{
-						Chunk?.Update();
-						return null;
-					});
-				}
+				update_player_pos(ChunkPos);
 			}
 			return $"{Chunks.Length} Chunks sent to threadpool for processing...";
 		}
@@ -206,50 +196,47 @@ namespace MinecraftClone.World_CS.Generation
 
 		public List<AABB> Get_aabbs(int layer, AABB Aabb)
 		{
-			List<AABB> Aabbs = new List<AABB>();
+			List<AABB> aabbs = new List<AABB>();
 
-			Vector3 A = new Vector3(Aabb.A.x, Aabb.A.y, Aabb.A.z);
-			Vector3 B = new Vector3(Aabb.B.x + 1, Aabb.B.y + 1, Aabb.B.z + 1);
+			Vec3 a = new Vec3(Aabb.A.x, Aabb.A.y, Aabb.A.z);
+			Vec3 b = new Vec3(Aabb.B.x + 1, Aabb.B.y + 1, Aabb.B.z + 1);
 
-			for (int Z = (int) A.z; Z < B.z; Z++)
+			for (int z = (int) a.Z; z < b.Z; z++)
 			{
-				for (int Y = (int) A.y; Y < B.y; Y++)
+				for (int y = (int) a.Y; y < b.Y; y++)
 				{
-					for (int X = (int) A.x; X < B.x; X++)
+					for (int x = (int) a.X; x < b.X; x++)
 					{
-						byte Block = GetBlockIdFromWorldPos(X, Y, Z);
-						if (!BlockHelper.BlockTypes[Block].NoCollision && Block != 0)
-						{
-							AABB C = new AABB(new Vector3(X, Y, Z), new Vector3(X + 1, Y + 1, Z + 1));
-							Aabbs.Add(C);
-						}
+						byte block = GetBlockIdFromWorldPos(x, y, z);
+						if (BlockHelper.BlockTypes[block].NoCollision || block == 0) continue;
+						AABB c = new AABB(new Vector3(x, y, z), new Vector3(x + 1, y + 1, z + 1));
+						aabbs.Add(c);
 					}
 				}
 			}
-			return Aabbs;
+			return aabbs;
 		}
 
 
 		byte GetBlockIdFromWorldPos(int X, int Y, int Z)
 		{
-			float Cx = Mathf.Floor((X) / ChunkCs.Dimension.x);
-			float Cz = Mathf.Floor((Z) / ChunkCs.Dimension.x);
 			
-			int Bx = (int) (X - Cx * ChunkCs.Dimension.x);
-			int By = Y;
-			int Bz = (int) (Z - Cz * ChunkCs.Dimension.x);
+			int Cx = (int) Mathf.Floor((X) / ChunkCs.Dimension.x);
+			int Cz = (int) Mathf.Floor((Z) / ChunkCs.Dimension.x);
+			int Bx = (int) (X % ChunkCs.Dimension.x);
+			int Bz = (int) (Z % ChunkCs.Dimension.x);
 
-			if (LoadedChunks.ContainsKey(new Vector2(Cx, Cz)) && ValidPlace(Bx, By, Bz))
+			if (LoadedChunks.ContainsKey(new Vector2(Cx, Cz)) && ValidPlace(Bx, Y, Bz))
 			{
 
-				return LoadedChunks[new Vector2(Cx, Cz)].BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)];
+				return LoadedChunks[new Vector2(Cx, Cz)].BlockData[ChunkCs.GetFlattenedDimension(Bx, Y, Bz)];
 			}
 
 			return 0;
 		}
 
 
-		bool ValidPlace(int X, int Y, int Z)
+		static bool ValidPlace(int X, int Y, int Z)
 		{
 			if (X < 0 || X >= ChunkCs.Dimension.x || Z < 0 || Z >= ChunkCs.Dimension.z || Y < 0 || Y >= ChunkCs.Dimension.y)
 			{
@@ -270,26 +257,25 @@ namespace MinecraftClone.World_CS.Generation
 				C = LoadedChunks[new Vector2(Cx, Cz)];
 			}
 
-			if (C.BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)] != T)
-			{
-				ConsoleLibrary.DebugPrint($"Changed block at {Bx} {By} {Bz} in chunk {Cx}, {Cz}");
-				C?._set_block_data(Bx,By,Bz,T, UpdateSurrounding: true);
-				_update_chunk(Cx, Cz);
-			}
+			if (C.BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)] == T) return;
+			ConsoleLibrary.DebugPrint($"Changed block at {Bx} {By} {Bz} in chunk {Cx}, {Cz}");
+			C?._set_block_data(Bx,By,Bz,T);
+			_update_chunk(Cx, Cz);
 		}
 
 		Vector2 _update_chunk(int Cx, int Cz)
 		{
 			Vector2 Cpos = new Vector2(Cx, Cz);
-			_threads.AddRequest(()=>
+
+			_threads.AddRequest(() =>
 			{
 				if (LoadedChunks.ContainsKey(Cpos))
 				{
-					LoadedChunks[Cpos]?.Update();	
+					LoadedChunks[Cpos]?.Update();
 				}
+
 				return null;
 			});
-
 			return Cpos;
 		}
 

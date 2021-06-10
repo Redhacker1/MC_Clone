@@ -31,9 +31,9 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 			
             Noisegen.SetFractalOctaves(1000);
 
-            for (int X = 0; X < ChunkCs.Dimension.x; X++)
+            for (int Z = 0; Z < ChunkCs.Dimension.z; Z++)
             {
-                for (int Z = 0; Z < ChunkCs.Dimension.x; Z++)
+                for (int X = 0; X < ChunkCs.Dimension.x; X++)
                 {
                     for (int Y = 0 + MinTerrainHeight; Y < Height[X, Z] - MaxTerrainCaveHeight; Y++)
                     {

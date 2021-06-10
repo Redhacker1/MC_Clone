@@ -3,8 +3,8 @@ using System.IO;
 using System.IO.Compression;
 using Godot;
 using MinecraftClone.World_CS.Generation;
-using Path = System.IO.Path;
 using File = System.IO.File;
+using Path = System.IO.Path;
 
 namespace MinecraftClone.World_CS.Utility.IO
 {

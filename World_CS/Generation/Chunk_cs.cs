@@ -1,14 +1,13 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Godot;
+using Godot.Collections;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Chunk_Generator_cs;
-using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
+using MinecraftClone.World_CS.Utility.JavaImports;
 
 namespace MinecraftClone.World_CS.Generation
 {
@@ -23,7 +22,7 @@ namespace MinecraftClone.World_CS.Generation
 
 		public Vector2 ChunkCoordinate;
 
-		public readonly Dictionary<Vector2, ChunkCs> NeighbourChunks = new Dictionary<Vector2, ChunkCs>();
+		public readonly System.Collections.Generic.Dictionary<Vector2, ChunkCs> NeighbourChunks = new System.Collections.Generic.Dictionary<Vector2, ChunkCs>();
 
 		static readonly Random Rng = new Random();
 
@@ -66,7 +65,7 @@ namespace MinecraftClone.World_CS.Generation
 
 		public ProcWorld World;
 		public int Seed;
-		public bool ChunkDirty = false;
+		public bool ChunkDirty;
 
 
 		public void Generate(ProcWorld W, float Cx, float Cz, Vector3 PosOffset)
@@ -80,21 +79,21 @@ namespace MinecraftClone.World_CS.Generation
 			
 			Rng.SetSeed(Seed);
 
-			int[,] GroundHeight = new int[(int)Dimension.x, (int)Dimension.x];
+			int[,] groundHeight = new int[(int)Dimension.x, (int)Dimension.x];
 
-			for (int X = 0; X < Dimension.x; X++)
+			for (int x = 0; x < Dimension.x; x++)
 			{
-				for (int Z = 0; Z < Dimension.x; Z++)
+				for (int z = 0; z < Dimension.x; z++)
 				{
-					float HNoise = Mathf.Clamp((1f + World.HeightNoise.GetSimplex(X + Translation.x, Z + Translation.z))/2,  0, 1);
-					int YHeight = (int) (HNoise * (GenHeight - 1) + 1) + BlockOffset;
-					GroundHeight[X,Z] = YHeight;
-					_generator.generate_surface(this ,GroundHeight[X,Z], X, Z);
-					_generator.GenerateTopsoil(this ,GroundHeight[X,Z], X, Z);	
+					float hNoise = Mathf.Clamp((1f + World.HeightNoise.GetSimplex(x + Translation.x, z + Translation.z))/2,  0, 1);
+					int yHeight = (int) (hNoise * (GenHeight - 1) + 1) + BlockOffset;
+					groundHeight[x,z] = yHeight;
+					_generator.generate_surface(this ,groundHeight[x,z], x, z);
+					_generator.GenerateTopsoil(this ,groundHeight[x,z], x, z);	
 				}
 			}
-			_generator.generate_details(this, Rng, GroundHeight);
-			_generator.Generate_Caves(this,Seed, GroundHeight);
+			_generator.generate_details(this, Rng, groundHeight);
+			_generator.Generate_Caves(this,Seed, groundHeight);
 
 
 		}
@@ -102,41 +101,41 @@ namespace MinecraftClone.World_CS.Generation
 		// HUGE HACK: This restricts the method to only running on one thread at a time, this will make threadpooling this impossible later
 		public void Update()
 		{
-			Stopwatch Watch = Stopwatch.StartNew();
+			Stopwatch watch = Stopwatch.StartNew();
 
-			List<Vector3> Blocks = new List<Vector3>();
-			List<Vector3> BlocksNormals = new List<Vector3>();
-			List<Vector2>  UVs = new List<Vector2>();
+			List<Vector3> blocks = new List<Vector3>();
+			List<Vector3> blocksNormals = new List<Vector3>();
+			List<Vector2>  uVs = new List<Vector2>();
 
-			ArrayMesh BlockArrayMesh = new ArrayMesh();
+			ArrayMesh blockArrayMesh = new ArrayMesh();
 			
 			
 			//Making use of multidimensional arrays allocated on creation, should speed up this process significantly
-			for (int X = 0; X < Dimension.x; X++)
-			for (int Y = 0; Y < Dimension.y; Y++)
-			for (int Z = 0; Z < Dimension.z; Z++)
+			for (int z = 0; z < Dimension.z; z++)
+			for (int y = 0; y < Dimension.y; y++)
+			for (int x = 0; x < Dimension.x; x++)
 			{
-				byte Block = BlockData[GetFlattenedDimension(X, Y, Z)];
-				if (Block != 0)
+				byte block = BlockData[GetFlattenedDimension(x, y, z)];
+				if (block == 0) continue;
+				bool[] check = check_transparent_neighbours(x, y, z);
+				if (check.Contains(true))
 				{
-					bool[] Check = check_transparent_neighbours(X, Y, Z);
-					if (Check.Contains(true))
-					{
-						_create_block(Check, X, Y, Z, Block, Blocks, BlocksNormals, UVs);	
-					}
+					_create_block(check, x, y, z, block, blocks, blocksNormals, uVs);	
 				}
 			}
 
-			Godot.Collections.Array MeshInstance = new Godot.Collections.Array();
-			MeshInstance.Resize((int) ArrayMesh.ArrayType.Max);
+			Array meshInstance = new Array();
+			meshInstance.Resize((int) ArrayMesh.ArrayType.Max);
 			
-			MeshInstance[(int)ArrayMesh.ArrayType.Vertex] = Blocks.ToArray(); 
-			MeshInstance[(int)ArrayMesh.ArrayType.TexUv] = UVs.ToArray();
-			MeshInstance[(int) ArrayMesh.ArrayType.Normal] = BlocksNormals.ToArray();
-			BlockArrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, MeshInstance);
-			BlockArrayMesh.SurfaceSetMaterial(0, _mat);
+			meshInstance[(int)ArrayMesh.ArrayType.Vertex] = blocks.ToArray(); 
+			meshInstance[(int)ArrayMesh.ArrayType.TexUv] = uVs.ToArray();
+			meshInstance[(int) ArrayMesh.ArrayType.Normal] = blocksNormals.ToArray();
+			blockArrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshInstance);
+			blockArrayMesh.SurfaceSetMaterial(0, _mat);
 			
-			_blockMeshInstance.Mesh = BlockArrayMesh;
+			_blockMeshInstance.Mesh = blockArrayMesh;
+			
+			ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
 
 
 		}
@@ -144,11 +143,11 @@ namespace MinecraftClone.World_CS.Generation
 
 		public void UpdateVisMask()
 		{
-			for (int X = 0; X < Dimension.x; X++)
-			for (int Y = 0; Y < Dimension.y; Y++)
-			for (int Z = 0; Z < Dimension.z; Z++)
+			for (int x = 0; x < Dimension.x; x++)
+			for (int y = 0; y < Dimension.y; y++)
+			for (int z = 0; z < Dimension.z; z++)
 			{
-				VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[BlockData[GetFlattenedDimension(X,Y,Z)]].Transparent;
+				VisibilityMask[x,y,z] = BlockHelper.BlockTypes[BlockData[GetFlattenedDimension(x,y,z)]].Transparent;
 			}
 		}
 		
@@ -165,35 +164,33 @@ namespace MinecraftClone.World_CS.Generation
 		{
 			if (X >= 0 && X < Dimension.x && Y >= 0 && Y < Dimension.y && Z >= 0 && Z < Dimension.z)
 			{
-				if (Overwrite || BlockData[GetFlattenedDimension(X, Y, Z)] == 0)
-				{
-					BlockData[GetFlattenedDimension(X, Y, Z)] = B;
+				if (!Overwrite && BlockData[GetFlattenedDimension(X, Y, Z)] != 0) return;
+				BlockData[GetFlattenedDimension(X, Y, Z)] = B;
 
-					VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[B].Transparent;
-					ChunkDirty = true;
-				}
+				VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[B].Transparent;
+				ChunkDirty = true;
 			}
 			else
 			{
 				//GD.Print("External Chunk Write");
-				Vector3 WorldCoordinates = new Vector3(X + Translation.x, Y, Z + Translation.z);
-				int LocalX = (int) (Mathf.PosMod(Mathf.Floor(WorldCoordinates.x), Dimension.x) + 0.5);
-				int LocalY = (int) (Mathf.PosMod(Mathf.Floor(WorldCoordinates.y), Dimension.y) + 0.5);
-				int LocalZ = (int) (Mathf.PosMod(Mathf.Floor(WorldCoordinates.z), Dimension.z) + 0.5);
+				Vector3 worldCoordinates = new Vector3(X + Translation.x, Y, Z + Translation.z);
+				int localX = (int) (Mathf.PosMod(Mathf.Floor(worldCoordinates.x), Dimension.x) + 0.5);
+				int localY = (int) (Mathf.PosMod(Mathf.Floor(worldCoordinates.y), Dimension.y) + 0.5);
+				int localZ = (int) (Mathf.PosMod(Mathf.Floor(worldCoordinates.z), Dimension.z) + 0.5);
 
-				int Cx = (int) Mathf.Floor(WorldCoordinates.x / Dimension.x);
-				int Cz = (int) Mathf.Floor(WorldCoordinates.z / Dimension.z);
+				int cx = (int) Mathf.Floor(worldCoordinates.x / Dimension.x);
+				int cz = (int) Mathf.Floor(worldCoordinates.z / Dimension.z);
 				
-				Vector2 ChunkKey = new Vector2(Cx, Cz);
-				if (NeighbourChunks.ContainsKey(ChunkKey))
+				Vector2 chunkKey = new Vector2(cx, cz);
+				if (NeighbourChunks.ContainsKey(chunkKey))
 				{
-					NeighbourChunks[ChunkKey]._set_block_data(LocalX, LocalY, LocalZ, B, Overwrite);
+					NeighbourChunks[chunkKey]._set_block_data(localX, localY, localZ, B, Overwrite);
 				}
-				else if(World.LoadedChunks.ContainsKey(ChunkKey))
+				else if(World.LoadedChunks.ContainsKey(chunkKey))
 				{
-					ChunkCs CurrentChunk = World.LoadedChunks[ChunkKey];
-					NeighbourChunks[ChunkKey] = CurrentChunk;
-					CurrentChunk?._set_block_data(LocalX,LocalY,LocalZ,B,Overwrite);
+					ChunkCs currentChunk = World.LoadedChunks[chunkKey];
+					NeighbourChunks[chunkKey] = currentChunk;
+					currentChunk?._set_block_data(localX,localY,localZ,B,Overwrite);
 				}
 			}
 		}
@@ -209,66 +206,63 @@ namespace MinecraftClone.World_CS.Generation
 
 		public static void _create_block(bool[] Check, int X, int Y, int Z, byte Block, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs)
 		{
-			bool NoCollision = BlockHelper.block_have_collision(Block);
-			List<BlockStruct> BlockTypes = BlockHelper.BlockTypes;
-			if (BlockTypes[Block].TagsList.Contains("Flat"))
+			List<BlockStruct> blockTypes = BlockHelper.BlockTypes;
+			if (blockTypes[Block].TagsList.Contains("Flat"))
 			{
-				create_face(Cross1, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
-				create_face(Cross2, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
-				create_face(Cross3, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
-				create_face(Cross4, X, Y, Z, BlockTypes[Block].Only, NoCollision, Blocks, BlocksNormals, UVs);
+				create_face(Cross1, X, Y, Z, blockTypes[Block].Only, Blocks, BlocksNormals, UVs);
+				create_face(Cross2, X, Y, Z, blockTypes[Block].Only, Blocks, BlocksNormals, UVs);
+				create_face(Cross3, X, Y, Z, blockTypes[Block].Only, Blocks, BlocksNormals, UVs);
+				create_face(Cross4, X, Y, Z, blockTypes[Block].Only, Blocks, BlocksNormals, UVs);
 			}
 			else
 			{
-				if (Check[0]) create_face(Top, X, Y, Z, BlockTypes[Block].Top, NoCollision, Blocks, BlocksNormals, UVs);
-				if (Check[1]) create_face(Bottom, X, Y, Z, BlockTypes[Block].Bottom, NoCollision, Blocks, BlocksNormals, UVs);
-				if (Check[2]) create_face(Left, X, Y, Z, BlockTypes[Block].Left, NoCollision, Blocks, BlocksNormals, UVs);
-				if (Check[3]) create_face(Right, X, Y, Z, BlockTypes[Block].Right, NoCollision, Blocks, BlocksNormals, UVs);
-				if (Check[4]) create_face(Back, X, Y, Z, BlockTypes[Block].Back, NoCollision, Blocks, BlocksNormals, UVs);
-				if (Check[5]) create_face(Front, X, Y, Z, BlockTypes[Block].Front, NoCollision, Blocks, BlocksNormals, UVs);
+				if (Check[0]) create_face(Top, X, Y, Z, blockTypes[Block].Top, Blocks, BlocksNormals, UVs);
+				if (Check[1]) create_face(Bottom, X, Y, Z, blockTypes[Block].Bottom, Blocks, BlocksNormals, UVs);
+				if (Check[2]) create_face(Left, X, Y, Z, blockTypes[Block].Left, Blocks, BlocksNormals, UVs);
+				if (Check[3]) create_face(Right, X, Y, Z, blockTypes[Block].Right, Blocks, BlocksNormals, UVs);
+				if (Check[4]) create_face(Back, X, Y, Z, blockTypes[Block].Back, Blocks, BlocksNormals, UVs);
+				if (Check[5]) create_face(Front, X, Y, Z, blockTypes[Block].Front, Blocks, BlocksNormals, UVs);
 			}
 		}
 
-		static void create_face(IReadOnlyList<int> I, int X, int Y, int Z, Vector2 TextureAtlasOffset,
-			bool NoCollision, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs)
+		static void create_face(IReadOnlyList<int> I, int X, int Y, int Z, Vector2 TextureAtlasOffset, List<Vector3> Blocks, List<Vector3> BlocksNormals, List<Vector2>  UVs)
 		{
-			Vector3 Offset = new Vector3(X, Y, Z);
+			Vector3 offset = new Vector3(X, Y, Z);
 
-			Vector3 A = V[I[0]] + Offset;
-			Vector3 B = V[I[1]] + Offset;
-			Vector3 C = V[I[2]] + Offset;
-			Vector3 D = V[I[3]] + Offset;
+			Vector3 a = V[I[0]] + offset;
+			Vector3 b = V[I[1]] + offset;
+			Vector3 c = V[I[2]] + offset;
+			Vector3 d = V[I[3]] + offset;
 
-			Vector2 UvOffset = new Vector2(
+			Vector2 uvOffset = new Vector2(
 				TextureAtlasOffset.x / TextureAtlasSize.x,
 				TextureAtlasOffset.y / TextureAtlasSize.y
 			);
 
 			// the f means float, there is another type called double it defaults to that has better accuracy at the cost of being larger to store, but vector3 does not use it.
-			Vector2 UvA = new Vector2(0f, 0f) + UvOffset;
-			Vector2 UvB = new Vector2(0, 1.0f / TextureAtlasSize.y) + UvOffset;
-			Vector2 UvC = new Vector2(1.0f / TextureAtlasSize.x, 1.0f / TextureAtlasSize.y) + UvOffset;
-			Vector2 UvD = new Vector2(1.0f / TextureAtlasSize.x, 0) + UvOffset;
+			Vector2 uvA = new Vector2(0f, 0f) + uvOffset;
+			Vector2 uvB = new Vector2(0, 1.0f / TextureAtlasSize.y) + uvOffset;
+			Vector2 uvC = new Vector2(1.0f / TextureAtlasSize.x, 1.0f / TextureAtlasSize.y) + uvOffset;
+			Vector2 uvD = new Vector2(1.0f / TextureAtlasSize.x, 0) + uvOffset;
 			
-			Blocks.AddRange(new[] {A, B, C, A, C, D});
+			Blocks.AddRange(new[] {a, b, c, a, c, d});
 
-			UVs.AddRange(new[] {UvA, UvB, UvC, UvA, UvC, UvD});
+			UVs.AddRange(new[] {uvA, uvB, uvC, uvA, uvC, uvD});
 
-			BlocksNormals.AddRange(NormalGenerate(A,B,C));
-			BlocksNormals.AddRange(NormalGenerate(A,C,D));
+			BlocksNormals.AddRange(NormalGenerate(a,b,c));
+			BlocksNormals.AddRange(NormalGenerate(a,c,d));
 		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		
 		static IEnumerable<Vector3> NormalGenerate(Vector3 A, Vector3 B, Vector3 C)
 		{
 			// HACK: Actually calculate normals as this only works for cubes
 
-			Vector3 Qr = C - A;
-			Vector3 Qs = B - A;
+			Vector3 qr = C - A;
+			Vector3 qs = B - A;
 
-			Vector3 Normal = new Vector3((Qr.y * Qs.z) - (Qr.z * Qs.y),(Qr.z * Qs.x) - (Qr.x * Qs.z), (Qr.x * Qs.y) - (Qr.y * Qs.x) );
+			Vector3 normal = new Vector3((qr.y * qs.z) - (qr.z * qs.y),(qr.z * qs.x) - (qr.x * qs.z), (qr.x * qs.y) - (qr.y * qs.x) );
 
-			return new[] {Normal, Normal, Normal};
+			return new[] {normal, normal, normal};
 
 		}
 
@@ -280,9 +274,27 @@ namespace MinecraftClone.World_CS.Generation
 
 		bool is_block_transparent(int X, int Y, int Z)
 		{
-			if (X < 0 || X >= Dimension.x || Z < 0 || Z >= Dimension.z || Y < 0 || Y >= Dimension.y)
+			if (X < 0 || X >= Dimension.x || Z < 0 || Z >= Dimension.z)
 			{
+				
+				int cx = (int) Mathf.Floor(X / ChunkCs.Dimension.x);
+				int cz = (int) Mathf.Floor(Z / ChunkCs.Dimension.x);
+
+				int bx = (int) (Mathf.PosMod(Mathf.Floor(X), ChunkCs.Dimension.x));
+				int by = (int) (Mathf.PosMod(Mathf.Floor(Y), ChunkCs.Dimension.y));
+				int bz = (int) (Mathf.PosMod(Mathf.Floor(Z), ChunkCs.Dimension.x));
+
+
+				if (World.LoadedChunks.ContainsKey(new Vector2(cx, cz)))
+				{
+					return World.LoadedChunks[new Vector2(cx, cz)].VisibilityMask[bx, by, bz];
+				}
 				return true;
+			}
+
+			if (Y < 0 || Y >= Dimension.y)
+			{
+				return true;	
 			}
 
 			return VisibilityMask[X,Y,Z];

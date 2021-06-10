@@ -4,7 +4,7 @@ using MinecraftClone.Player_CS;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
 using MinecraftClone.World_CS.Utility.IO;
-using System;
+using Path = System.IO.Path;
 
 namespace MinecraftClone.World_CS.Utility
 {
@@ -16,7 +16,7 @@ namespace MinecraftClone.World_CS.Utility
 		int _chunkZ = 1;
 		Player _player;
 
-		public Logger Logger = new Logger(System.IO.Path.Combine(OS.GetExecutablePath().GetBaseDir(),"Logs"), "DebugFile", ConsoleLibrary.DebugPrint);
+		public Logger Logger = new Logger(Path.Combine(OS.GetExecutablePath().GetBaseDir(),"Logs"), "DebugFile", ConsoleLibrary.DebugPrint);
 
 		static public ProcWorld _pw;
 
@@ -27,7 +27,7 @@ namespace MinecraftClone.World_CS.Utility
 			WorldManager.FindWorlds();
 			WorldData worldPath = WorldManager.CreateWorld();
 			_player = GetNode<Node>("Player") as Player;
-			_player.level = _pw;
+			_player.Level = _pw;
 
 			ConsoleLibrary.DebugPrint("CREATING WORLD");
 			_pw = new ProcWorld {World = worldPath, Initializer = this};

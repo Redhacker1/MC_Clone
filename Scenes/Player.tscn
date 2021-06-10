@@ -20,6 +20,7 @@ material/0 = null
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.861538, 0 )
 
 [node name="Camera" type="Camera" parent="CameraBase"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0 )
 far = 500.0
 
 [node name="RayCast" type="RayCast" parent="CameraBase/Camera"]

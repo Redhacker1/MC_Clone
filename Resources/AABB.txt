@@ -1,0 +1,6 @@
+AxAyAz
+AxAyBz
+AxByAz
+BxAyAz
+AxByBz
+BxByBz
