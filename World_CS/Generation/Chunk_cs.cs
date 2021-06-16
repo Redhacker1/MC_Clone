@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Godot;
 using Godot.Collections;
-using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Chunk_Generator_cs;
 using MinecraftClone.World_CS.Utility.JavaImports;
@@ -135,7 +133,7 @@ namespace MinecraftClone.World_CS.Generation
 			
 			_blockMeshInstance.Mesh = blockArrayMesh;
 			
-			ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
+			//ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
 
 
 		}
@@ -277,12 +275,12 @@ namespace MinecraftClone.World_CS.Generation
 			if (X < 0 || X >= Dimension.x || Z < 0 || Z >= Dimension.z)
 			{
 				
-				int cx = (int) Mathf.Floor(X / ChunkCs.Dimension.x);
-				int cz = (int) Mathf.Floor(Z / ChunkCs.Dimension.x);
+				int cx = (int) Mathf.Floor(X / Dimension.x);
+				int cz = (int) Mathf.Floor(Z / Dimension.x);
 
-				int bx = (int) (Mathf.PosMod(Mathf.Floor(X), ChunkCs.Dimension.x));
-				int by = (int) (Mathf.PosMod(Mathf.Floor(Y), ChunkCs.Dimension.y));
-				int bz = (int) (Mathf.PosMod(Mathf.Floor(Z), ChunkCs.Dimension.x));
+				int bx = (int) (Mathf.PosMod(Mathf.Floor(X), Dimension.x));
+				int by = (int) (Mathf.PosMod(Mathf.Floor(Y), Dimension.y));
+				int bz = (int) (Mathf.PosMod(Mathf.Floor(Z), Dimension.x));
 
 
 				if (World.LoadedChunks.ContainsKey(new Vector2(cx, cz)))

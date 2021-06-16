@@ -17,6 +17,7 @@ config/icon="res://Resources/icon.png"
 
 [display]
 
+window/vsync/use_vsync=false
 window/per_pixel_transparency/allowed=true
 
 [global]
@@ -125,6 +126,7 @@ common/enable_object_picking=false
 [rendering]
 
 threads/thread_model=2
+quality/spatial_partitioning/use_bvh=false
 quality/subsurface_scattering/quality=0
 quality/subsurface_scattering/scale=0
 quality/subsurface_scattering/weight_samples=false

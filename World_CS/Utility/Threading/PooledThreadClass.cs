@@ -78,11 +78,9 @@ namespace MinecraftClone.World_CS.Utility.Threading
                     }
                 }
 
-                if (CurrentTask != null)
-                {
-                    CurrentTask.Result = CurrentTask.Method();
-                    CurrentTask.BHasRun = true;
-                }
+                if (CurrentTask == null) continue;
+                CurrentTask.Result = CurrentTask.Method();
+                CurrentTask.BHasRun = true;
             }
         }
     }

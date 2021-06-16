@@ -30,7 +30,7 @@ namespace MinecraftClone.World_CS.Utility
 			_player.Level = _pw;
 
 			ConsoleLibrary.DebugPrint("CREATING WORLD");
-			_pw = new ProcWorld {World = worldPath, Initializer = this};
+			_pw = new ProcWorld {World = worldPath};
 
 			AddChild(_pw);
 			Connect("tree_exiting", this, "_on_WorldScript_tree_exiting");

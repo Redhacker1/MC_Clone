@@ -103,7 +103,7 @@ namespace MinecraftClone.World_CS.Utility.Threading
         }
 
         /// <summary>
-        /// Currently Non-functional 
+        /// Handles shutdown of threads. 
         /// </summary>
         public void ShutDownHandler()
         {

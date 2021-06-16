@@ -5,7 +5,7 @@ using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Noise;
-using MinecraftClone.World_CS.Utility;
+using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.IO;
 using MinecraftClone.World_CS.Utility.Physics;
 using MinecraftClone.World_CS.Utility.Threading;
@@ -19,14 +19,12 @@ namespace MinecraftClone.World_CS.Generation
 
 		ThreadPoolClass _threads = new ThreadPoolClass();
 		
-		//
+		// Max chunks radius comes out to (_loadRadius*2)^2 
 		int _loadRadius = 16;
 
 		readonly object _chunkMutex = new object(); 
 		
 		public WorldData World;
-
-		public WorldScript Initializer;
 
 		public readonly Dictionary<Vector2, ChunkCs> LoadedChunks = new Dictionary<Vector2, ChunkCs>();
 
@@ -42,6 +40,8 @@ namespace MinecraftClone.World_CS.Generation
 		Vector2 _newChunkPos;
 
 		Thread _terrainThread;
+
+		DebugLines lines = new DebugLines();
 
 		public override void _Ready()
 		{
@@ -70,6 +70,7 @@ namespace MinecraftClone.World_CS.Generation
 			ConsoleLibrary.DebugPrint("Binding Console Commands");
 			// Console Binds
 			ConsoleLibrary.BindCommand("reload_chunks", "reloads all currently loaded chunks", "reload_chunks", ReloadChunks, false);
+			ConsoleLibrary.BindCommand("reset", "Reloads world after saving, ","reset", restart, false);
 		}
 
 		void _thread_gen()
@@ -211,6 +212,7 @@ namespace MinecraftClone.World_CS.Generation
 						if (BlockHelper.BlockTypes[block].NoCollision || block == 0) continue;
 						AABB c = new AABB(new Vector3(x, y, z), new Vector3(x + 1, y + 1, z + 1));
 						aabbs.Add(c);
+						//DebugLine(new Vector3(x,y,z), new Vector3(x + 1, y + 1, z + 1));
 					}
 				}
 			}
@@ -218,24 +220,39 @@ namespace MinecraftClone.World_CS.Generation
 		}
 
 
+		void DebugLine(Vector3 A, Vector3 B)
+		{
+			lines.Drawline(A, B, Colors.Red);
+		}
+
+
 		byte GetBlockIdFromWorldPos(int X, int Y, int Z)
 		{
 			
-			int Cx = (int) Mathf.Floor((X) / ChunkCs.Dimension.x);
-			int Cz = (int) Mathf.Floor((Z) / ChunkCs.Dimension.x);
-			int Bx = (int) (X % ChunkCs.Dimension.x);
-			int Bz = (int) (Z % ChunkCs.Dimension.x);
+			int Cx = (int) Mathf.Floor(X / ChunkCs.Dimension.x);
+			int Cz = (int) Mathf.Floor(Z / ChunkCs.Dimension.x);
+
+			int Bx = (int) (Mathf.PosMod(Mathf.Floor(X), ChunkCs.Dimension.x) + 0.5);
+			int By = (int) (Mathf.PosMod(Mathf.Floor(Y), ChunkCs.Dimension.y) + 0.5);
+			int Bz = (int) (Mathf.PosMod(Mathf.Floor(Z), ChunkCs.Dimension.x) + 0.5);
 
 			if (LoadedChunks.ContainsKey(new Vector2(Cx, Cz)) && ValidPlace(Bx, Y, Bz))
 			{
 
-				return LoadedChunks[new Vector2(Cx, Cz)].BlockData[ChunkCs.GetFlattenedDimension(Bx, Y, Bz)];
+				return LoadedChunks[new Vector2(Cx, Cz)].BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)];
 			}
 
 			return 0;
 		}
-
-
+		
+		
+		/// <summary>
+		/// Checks to ensure block is inside chunk, NOTE: Takes a relative position and does not account for validity of the chunk itself
+		/// </summary>
+		/// <param name="X"></param>
+		/// <param name="Y"></param>
+		/// <param name="Z"></param>
+		/// <returns>whether it is safe to write or read from the block in the chunk</returns>
 		static bool ValidPlace(int X, int Y, int Z)
 		{
 			if (X < 0 || X >= ChunkCs.Dimension.x || Z < 0 || Z >= ChunkCs.Dimension.z || Y < 0 || Y >= ChunkCs.Dimension.y)
@@ -251,15 +268,15 @@ namespace MinecraftClone.World_CS.Generation
 
 		public void change_block(int Cx, int Cz, int Bx, int By, int Bz, byte T)
 		{
-			ChunkCs C;
+			ChunkCs c;
 			lock (_chunkMutex)
 			{
-				C = LoadedChunks[new Vector2(Cx, Cz)];
+				c = LoadedChunks[new Vector2(Cx, Cz)];
 			}
 
-			if (C.BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)] == T) return;
+			if (c.BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)] == T) return;
 			ConsoleLibrary.DebugPrint($"Changed block at {Bx} {By} {Bz} in chunk {Cx}, {Cz}");
-			C?._set_block_data(Bx,By,Bz,T);
+			c?._set_block_data(Bx,By,Bz,T);
 			_update_chunk(Cx, Cz);
 		}
 
@@ -317,6 +334,23 @@ namespace MinecraftClone.World_CS.Generation
 		void kill_thread()
 		{
 			_bKillThread = true;
+			
+			_threads.ShutDownHandler();
+		}
+
+		string restart(params string[] parameters)
+		{
+			// Shuts down the old threadpool and saves the game state.
+			SaveAndQuit();
+
+			if ( GetTree()  != null)
+			{
+
+				GetTree().ChangeSceneTo(GD.Load<PackedScene>("res://Scenes/Spatial.tscn"));
+			}
+			
+			
+			return "Restarting...";
 		}
 		
 		public void SaveAndQuit()
@@ -344,12 +378,14 @@ namespace MinecraftClone.World_CS.Generation
 	            }
 	            
 	            
-	            // Hack: this needs to be corrected.
+	            // Hack: this needs to be corrected, probably doable with a monitor.Lock() and then a callback to evaluate the  
 	            while (_threads.AllThreadsIdle() != true)
 	            {
 		            
 	            }
-	            CallDeferred("kill_thread");
+	            kill_thread();
+	            
+	            
             }
 
 			if (GetTree() != null)

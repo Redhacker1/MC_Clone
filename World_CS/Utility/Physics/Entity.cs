@@ -68,9 +68,9 @@ public abstract class Entity: Spatial
             if (Math.Abs(o.y - _a.y) > double.Epsilon) PosDelta.y = 0;
             if (Math.Abs(o.z - _a.z) > double.Epsilon) PosDelta.z = 0;
 
-            Pos.x = (float) ((AABB.A.x + AABB.B.x) / 2.0f);
-            Pos.y = (float) (AABB.A.y + EyeOffset);
-            Pos.z = (float) ((AABB.A.z + AABB.B.z) / 2.0f);
+            Pos.x = (AABB.A.x + AABB.B.x) / 2.0f;
+            Pos.y = AABB.A.y + EyeOffset;
+            Pos.z = (AABB.A.z + AABB.B.z) / 2.0f;
 
             Translation = new Vector3(Pos.x, Pos.y, Pos.z);
         }

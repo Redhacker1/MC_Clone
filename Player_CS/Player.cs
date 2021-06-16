@@ -59,7 +59,7 @@ namespace MinecraftClone.Player_CS
 
 			_fpCam = GetNode<Camera>("CameraBase/Camera");
 			_raycast = GetNode<RayCast>("CameraBase/Camera/RayCast");
-			_infoLabel = GetNode<Label>("CameraBase/Camera/Label");
+			_infoLabel = GetNode<Label>("CameraBase/Camera/Debug_line_01");
 
 
 			Input.SetMouseMode(Input.MouseMode.Captured);

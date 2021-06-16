@@ -1,4 +1,4 @@
-﻿using Godot;
+﻿using System.Numerics;
 
 namespace MinecraftClone.World_CS.Utility.Physics
 {
@@ -15,7 +15,7 @@ namespace MinecraftClone.World_CS.Utility.Physics
             Z = z;
         }
         
-        public Vec3(System.Numerics.Vector3 vector3)
+        public Vec3(Vector3 vector3)
         {
             X = vector3.X;
             Y = vector3.Y;
@@ -67,22 +67,22 @@ namespace MinecraftClone.World_CS.Utility.Physics
             return new Vec3(left.X * Right.X, left.Y * Right.Z, left.Z * Right.Z);
         }
 
+        public static implicit operator Godot.Vector3(Vec3 vector)
+        {
+            return new Godot.Vector3((float) vector.X, (float) vector.Y, (float) vector.Z);
+        }
+        
         public static implicit operator Vector3(Vec3 vector)
         {
             return new Vector3((float) vector.X, (float) vector.Y, (float) vector.Z);
         }
         
-        public static implicit operator System.Numerics.Vector3(Vec3 vector)
-        {
-            return new System.Numerics.Vector3((float) vector.X, (float) vector.Y, (float) vector.Z);
-        }
-        
-        public static implicit operator Vec3(Vector3 vector)
+        public static implicit operator Vec3(Godot.Vector3 vector)
         {
             return new Vec3(vector.x, vector.y, vector.z);
         }
         
-        public static implicit operator Vec3(System.Numerics.Vector3 vector)
+        public static implicit operator Vec3(Vector3 vector)
         {
             return new Vec3(vector.X, vector.Y, vector.Z);
         }
