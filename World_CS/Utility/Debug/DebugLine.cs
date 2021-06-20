@@ -90,5 +90,10 @@ namespace MinecraftClone.World_CS.Utility.Debug
         {
             lines.Add(new DebugLine(start, start + ray, color, time));
         }
+
+        public void DrawDot(Vector3 location, Color color, float time = 0.0f)
+        {
+            Drawline(location, new Vector3(.01f, .01f,.01f) + location, color, time);
+        }
     }
 }

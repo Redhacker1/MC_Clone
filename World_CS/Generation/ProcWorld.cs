@@ -1,3 +1,7 @@
+/* TODO: This is starting to become a SuperClass with catch-all functionality, might be best to seperate it out.
+	Might be best to move some of the more chunk oriented methods into the chunkCS class that do not use the chunk class statically.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +11,6 @@ using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Noise;
 using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.IO;
-using MinecraftClone.World_CS.Utility.Physics;
 using MinecraftClone.World_CS.Utility.Threading;
 using AABB = MinecraftClone.World_CS.Utility.Physics.AABB;
 using Thread = System.Threading.Thread;
@@ -16,7 +19,7 @@ namespace MinecraftClone.World_CS.Generation
 {
 	public class ProcWorld : Spatial
 	{
-
+		
 		ThreadPoolClass _threads = new ThreadPoolClass();
 		
 		// Max chunks radius comes out to (_loadRadius*2)^2 
@@ -41,7 +44,7 @@ namespace MinecraftClone.World_CS.Generation
 
 		Thread _terrainThread;
 
-		DebugLines lines = new DebugLines();
+		public static DebugLines lines;
 
 		public override void _Ready()
 		{
@@ -66,6 +69,10 @@ namespace MinecraftClone.World_CS.Generation
 			// Preparing static terrain thread 
 			_terrainThread = new Thread(_thread_gen);
 			_terrainThread.Start();
+			
+			// Add debugLines to scene
+			lines = new DebugLines();
+			AddChild(lines);
 
 			ConsoleLibrary.DebugPrint("Binding Console Commands");
 			// Console Binds
@@ -198,21 +205,21 @@ namespace MinecraftClone.World_CS.Generation
 		public List<AABB> Get_aabbs(int layer, AABB Aabb)
 		{
 			List<AABB> aabbs = new List<AABB>();
+			Vector3 a = new Vector3(Aabb.MinLoc.x - 1, Aabb.MinLoc.y - 1, Aabb.MinLoc.z - 1);
+			Vector3 b = new Vector3(Aabb.MaxLoc.x, Aabb.MaxLoc.y, Aabb.MaxLoc.z);
 
-			Vec3 a = new Vec3(Aabb.A.x, Aabb.A.y, Aabb.A.z);
-			Vec3 b = new Vec3(Aabb.B.x + 1, Aabb.B.y + 1, Aabb.B.z + 1);
-
-			for (int z = (int) a.Z; z < b.Z; z++)
+			for (int z = (int) a.z; z < b.z; z++)
 			{
-				for (int y = (int) a.Y; y < b.Y; y++)
+				for (int y = (int) a.y; y < b.y; y++)
 				{
-					for (int x = (int) a.X; x < b.X; x++)
+					for (int x = (int) a.x; x < b.x; x++)
 					{
 						byte block = GetBlockIdFromWorldPos(x, y, z);
 						if (BlockHelper.BlockTypes[block].NoCollision || block == 0) continue;
 						AABB c = new AABB(new Vector3(x, y, z), new Vector3(x + 1, y + 1, z + 1));
 						aabbs.Add(c);
-						//DebugLine(new Vector3(x,y,z), new Vector3(x + 1, y + 1, z + 1));
+						
+						c.DrawDebug();
 					}
 				}
 			}
@@ -229,12 +236,12 @@ namespace MinecraftClone.World_CS.Generation
 		byte GetBlockIdFromWorldPos(int X, int Y, int Z)
 		{
 			
-			int Cx = (int) Mathf.Floor(X / ChunkCs.Dimension.x);
-			int Cz = (int) Mathf.Floor(Z / ChunkCs.Dimension.x);
+			int Cx = (int) Math.Floor(X / ChunkCs.Dimension.x);
+			int Cz = (int) Math.Floor(Z / ChunkCs.Dimension.x);
 
-			int Bx = (int) (Mathf.PosMod(Mathf.Floor(X), ChunkCs.Dimension.x) + 0.5);
-			int By = (int) (Mathf.PosMod(Mathf.Floor(Y), ChunkCs.Dimension.y) + 0.5);
-			int Bz = (int) (Mathf.PosMod(Mathf.Floor(Z), ChunkCs.Dimension.x) + 0.5);
+			int Bx = (int) (Mathf.PosMod(X, ChunkCs.Dimension.x));
+			int By = (int) (Mathf.PosMod(Y, ChunkCs.Dimension.y));
+			int Bz = (int) (Mathf.PosMod(Z, ChunkCs.Dimension.x));
 
 			if (LoadedChunks.ContainsKey(new Vector2(Cx, Cz)) && ValidPlace(Bx, Y, Bz))
 			{
@@ -372,6 +379,7 @@ namespace MinecraftClone.World_CS.Generation
 			            {
 				            SaveFileHandler.WriteChunkData(Chunk.Value.BlockData,
 					            Chunk.Value.ChunkCoordinate, World);
+
 				            return null; 
 			            });	
 		            }

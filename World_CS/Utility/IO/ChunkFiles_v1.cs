@@ -94,10 +94,68 @@ namespace MinecraftClone.World_CS.Utility.IO
             chunkExists = true;
             return referencedChunk;
         }
+
+        public void WriteChunkData_new(byte[] blocks, Vector2 chunkCoords, WorldData world, bool optimizeSave = true)
+        {
+            SaveInfo saveData = SerializeChunkData(blocks,chunkCoords, world, optimizeSave);
+            
+            var chunkdat = new MemoryStream();
+            
+            BinaryWriter fileWriter = new BinaryWriter(chunkdat);
+
+            fileWriter.Write(saveData.VersionNumber);
+            fileWriter.Write(saveData.BlockSize);
+            fileWriter.Write(saveData.BiomeId);
+
+            fileWriter.Write((short)saveData.BlockIdWriter.Count);
+            foreach (KeyValuePair<byte, byte> blockIdPair in saveData.BlockIdWriter)
+            {
+                fileWriter.Write(blockIdPair.Key);
+                fileWriter.Write(blockIdPair.Value);
+            }
+            
+            
+            fileWriter.Write((int)saveData.Location.x);
+            fileWriter.Write((int)saveData.Location.y);
+
+            foreach (byte block in saveData.ChunkBlocks)
+            {
+                fileWriter.Write(saveData.BlockIdWriter[block]);
+            }
+
+
+            FileStream fs = new FileStream(Path.Combine(world.Directory, GetFilename(chunkCoords, world, optimizeSave)), FileMode.Create);
+
+
+            DeflateStream compressor;
+            if (optimizeSave)
+            {
+
+                string uncompressedPath = Path.Combine(world.Directory, $"{world.Name}_x_{(int)saveData.Location.x}-y_{(int)saveData.Location.y}.cdat");
+                if (File.Exists(uncompressedPath))
+                {
+                    File.Delete(uncompressedPath);
+                }
+
+                var cdat = Compress(chunkdat.ToArray());
+                fs.Write(cdat, 0, cdat.Length);
+            }
+            else
+            {
+                fs.Write(chunkdat.ToArray(), 0, (int)chunkdat.Length);
+            }
+            
+            fileWriter.Close();
+            chunkdat.Close();
+            fs.Close();
+
+
+        }
         
         public override void WriteChunkData(byte[] blocks, Vector2 chunkCoords, WorldData world, bool optimizeSave = true)
         {
-            SaveInfo saveData = SerializeChunkData(blocks,chunkCoords, world, optimizeSave);
+            WriteChunkData_new(blocks, chunkCoords, world, optimizeSave);
+            /*SaveInfo saveData = SerializeChunkData(blocks,chunkCoords, world, optimizeSave);
             string filename;
 
             filename = GetFilename(chunkCoords, world, optimizeSave);
@@ -157,7 +215,23 @@ namespace MinecraftClone.World_CS.Utility.IO
                 compressor.Close();   
             }
             fs.Close();
-
+            
+            */
         }
+        
+        public static byte[] Compress(byte[] data)
+        {
+            byte[] compressArray = null;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionMode.Compress))
+                {
+                    deflateStream.Write(data, 0, data.Length);
+                }
+                compressArray = memoryStream.ToArray();
+            }
+            return compressArray;
+        }
+
     }
 }

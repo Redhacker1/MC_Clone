@@ -22,14 +22,8 @@ namespace MinecraftClone.World_CS.Utility.IO
             {
                 if (format.ChunkExists(world, chunkCoords) && format != DefaultSaveFileFormat)
                 {
-                    try
-                    {
-                        File.Delete(format.GetFilename(chunkCoords, world, true));
-                        File.Delete(format.GetFilename(chunkCoords, world, false));
-                    }
-                    catch (FileNotFoundException)
-                    {
-                    }
+                    File.Delete(format.GetFilename(chunkCoords, world, true));
+                    File.Delete(format.GetFilename(chunkCoords, world, false));
                 }
             }
             DefaultSaveFileFormat.WriteChunkData(blocks,chunkCoords,world,optimizeSave);

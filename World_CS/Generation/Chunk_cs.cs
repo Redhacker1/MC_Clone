@@ -16,6 +16,8 @@ namespace MinecraftClone.World_CS.Generation
 		const int GenHeight = 60;
 		const int BlockOffset = 0;
 
+		bool NeedsSaved = false;
+
 		readonly object _collisionLock = new object();
 
 		public Vector2 ChunkCoordinate;
@@ -95,8 +97,7 @@ namespace MinecraftClone.World_CS.Generation
 
 
 		}
-
-		// HUGE HACK: This restricts the method to only running on one thread at a time, this will make threadpooling this impossible later
+		
 		public void Update()
 		{
 			Stopwatch watch = Stopwatch.StartNew();
@@ -108,7 +109,7 @@ namespace MinecraftClone.World_CS.Generation
 			ArrayMesh blockArrayMesh = new ArrayMesh();
 			
 			
-			//Making use of multidimensional arrays allocated on creation, should speed up this process significantly
+			//Making use of multidimensional arrays allocated on creation
 			for (int z = 0; z < Dimension.z; z++)
 			for (int y = 0; y < Dimension.y; y++)
 			for (int x = 0; x < Dimension.x; x++)
@@ -141,9 +142,9 @@ namespace MinecraftClone.World_CS.Generation
 
 		public void UpdateVisMask()
 		{
-			for (int x = 0; x < Dimension.x; x++)
-			for (int y = 0; y < Dimension.y; y++)
 			for (int z = 0; z < Dimension.z; z++)
+			for (int y = 0; y < Dimension.y; y++)
+			for (int x = 0; x < Dimension.x; x++)
 			{
 				VisibilityMask[x,y,z] = BlockHelper.BlockTypes[BlockData[GetFlattenedDimension(x,y,z)]].Transparent;
 			}
@@ -167,6 +168,7 @@ namespace MinecraftClone.World_CS.Generation
 
 				VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[B].Transparent;
 				ChunkDirty = true;
+				NeedsSaved = true;
 			}
 			else
 			{

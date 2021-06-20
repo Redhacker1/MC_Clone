@@ -124,12 +124,12 @@ namespace MinecraftClone.Player_CS
 			float px = Translation.x - cx * ChunkCs.Dimension.x;
 			float py = Translation.y;
 			float pz = Translation.z - cz * ChunkCs.Dimension.x;
-
 			_infoLabel.Text = $"Selected block {_selectedBlock}, Chunk ({cx}, {cz}) pos ({px}, {py}, {pz})";
 
 			if (!_paused)
 			{
 				_controller.Player_move(delta);
+				//AABB.DrawDebug();
 
 
 				if (_raycast?.IsColliding() == true)
