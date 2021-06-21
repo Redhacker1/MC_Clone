@@ -97,12 +97,9 @@ namespace MinecraftClone.World_CS.Utility.Physics
 
         public bool Intersects(AABB c)
         {
-            GD.Print(!(this.MaxLoc.x < c.MinLoc.x || this.MaxLoc.y < c.MinLoc.y ||
-                       this.MaxLoc.z < c.MinLoc.z || this.MinLoc.x > c.MaxLoc.x ||
-                       this.MinLoc.y > c.MaxLoc.y || this.MinLoc.z > c.MaxLoc.z));
-            return !(this.MaxLoc.x < c.MinLoc.x || this.MaxLoc.y < c.MinLoc.y ||
-                     this.MaxLoc.z < c.MinLoc.z || this.MinLoc.x > c.MaxLoc.x ||
-                     this.MinLoc.y > c.MaxLoc.y || this.MinLoc.z > c.MaxLoc.z);
+            return !(this.MaxLoc.x <= c.MinLoc.x || this.MaxLoc.y <= c.MinLoc.y ||
+                     this.MaxLoc.z <= c.MinLoc.z || this.MinLoc.x >= c.MaxLoc.x ||
+                     this.MinLoc.y >= c.MaxLoc.y || this.MinLoc.z >= c.MaxLoc.z);
         }
 
         public void Move(Vector3 a)

@@ -41,6 +41,7 @@ namespace MinecraftClone.World_CS.Generation
 		Vector2 _lastChunk;
 
 		Vector2 _newChunkPos;
+		
 
 		Thread _terrainThread;
 
@@ -182,7 +183,7 @@ namespace MinecraftClone.World_CS.Generation
 
 				if (C != null)
 				{
-					CallDeferred("add_child", C);
+					AddChild(C);
 				}
 				C?.UpdateVisMask();
 				_update_chunk(Cx, Cz);

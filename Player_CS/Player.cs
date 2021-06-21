@@ -90,6 +90,8 @@ namespace MinecraftClone.Player_CS
 
 			if (!_paused)
 			{
+				World.Get_aabbs(0, AABB);
+				//AABB.DrawDebug();
 			}
 
 
@@ -128,9 +130,8 @@ namespace MinecraftClone.Player_CS
 
 			if (!_paused)
 			{
+				
 				_controller.Player_move(delta);
-				//AABB.DrawDebug();
-
 
 				if (_raycast?.IsColliding() == true)
 				{
