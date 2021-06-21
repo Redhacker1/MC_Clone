@@ -29,7 +29,7 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
             NoiseUtil Noisegen = new NoiseUtil();
             Noisegen.SetSeed((int)Seed + (int)(Chunk.ChunkCoordinate.x + Chunk.ChunkCoordinate.y));
 			
-            Noisegen.SetFractalOctaves(1000);
+            Noisegen.SetFractalOctaves(100);
 
             for (int Z = 0; Z < ChunkCs.Dimension.z; Z++)
             {

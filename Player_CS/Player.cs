@@ -90,7 +90,7 @@ namespace MinecraftClone.Player_CS
 
 			if (!_paused)
 			{
-				World.Get_aabbs(0, AABB);
+				//World.Get_aabbs(0, AABB);
 				//AABB.DrawDebug();
 			}
 

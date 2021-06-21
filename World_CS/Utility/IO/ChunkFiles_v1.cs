@@ -126,8 +126,7 @@ namespace MinecraftClone.World_CS.Utility.IO
 
             FileStream fs = new FileStream(Path.Combine(world.Directory, GetFilename(chunkCoords, world, optimizeSave)), FileMode.Create);
 
-
-            DeflateStream compressor;
+            
             if (optimizeSave)
             {
 

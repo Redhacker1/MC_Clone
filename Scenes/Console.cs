@@ -21,7 +21,7 @@ namespace MinecraftClone.Scenes
 			_consoleBox = GetNode("VSplitContainer/ConsoleHistory") as TextEdit;
 			_cmdInputBox = GetNode("VSplitContainer/HSplitContainer/LineEdit") as LineEdit;
 			
-			_cmdInputBox.Connect("text_entered", this, "CommandEntered");
+			_cmdInputBox?.Connect("text_entered", this, "CommandEntered");
 			_consoleBox.Text = "lol";
 		}
 

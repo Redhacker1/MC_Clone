@@ -220,7 +220,7 @@ namespace MinecraftClone.World_CS.Generation
 						AABB c = new AABB(new Vector3(x, y, z), new Vector3(x + 1, y + 1, z + 1));
 						aabbs.Add(c);
 						
-						c.DrawDebug();
+						//c.DrawDebug();
 					}
 				}
 			}

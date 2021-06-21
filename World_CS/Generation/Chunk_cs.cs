@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using Godot;
 using Godot.Collections;
+using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Chunk_Generator_cs;
 using MinecraftClone.World_CS.Utility.JavaImports;
@@ -16,9 +17,7 @@ namespace MinecraftClone.World_CS.Generation
 		const int GenHeight = 60;
 		const int BlockOffset = 0;
 
-		bool NeedsSaved = false;
-
-		readonly object _collisionLock = new object();
+		//bool NeedsSaved;
 
 		public Vector2 ChunkCoordinate;
 
@@ -134,7 +133,7 @@ namespace MinecraftClone.World_CS.Generation
 			
 			_blockMeshInstance.Mesh = blockArrayMesh;
 			
-			//ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
+			ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
 
 
 		}
@@ -168,7 +167,7 @@ namespace MinecraftClone.World_CS.Generation
 
 				VisibilityMask[X,Y,Z] = BlockHelper.BlockTypes[B].Transparent;
 				ChunkDirty = true;
-				NeedsSaved = true;
+				//NeedsSaved = true;
 			}
 			else
 			{
