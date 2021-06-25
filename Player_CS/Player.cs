@@ -1,17 +1,23 @@
+using System;
 using Godot;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
+using MinecraftClone.World_CS.Utility;
+using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.Physics;
 
 namespace MinecraftClone.Player_CS
 {
+	[Tool]
 	public class Player : Entity
 	{
 		
-		Camera _fpCam;
+		public Camera _fpCam;
 		RayCast _raycast;
 		Label _infoLabel;
 		Control _console;
+		
+		Vector3 Camdir = Vector3.Zero;
 		
 		
 		public ProcWorld World;
@@ -24,7 +30,7 @@ namespace MinecraftClone.Player_CS
 		
 		public const int Speed = 5;
 		public const int JumpVel = 5;
-		int _selectedBlockIndex;
+		int _selectedBlockIndex = 0;
 
 		PlayerController _controller;
 
@@ -33,18 +39,11 @@ namespace MinecraftClone.Player_CS
 
 		void toggle_pause()
 		{
-			_paused = !_paused;
+			_paused =! _paused;
 			GetTree().Paused = _paused;
-			if (_paused)
-			{
-				Input.SetMouseMode(Input.MouseMode.Visible);
-			}
-			else
-			{
-				Input.SetMouseMode(Input.MouseMode.Captured);
-			}
+			Input.SetMouseMode(_paused ? Input.MouseMode.Visible : Input.MouseMode.Captured);
 		}
-		
+
 		public override void _Ready()
 		{
 
@@ -53,108 +52,139 @@ namespace MinecraftClone.Player_CS
 
 			// Facinating
 			BlockHelper.RegisterBaseBlocks();
-			
+
 			_selectedBlock = BlockHelper.IdToString[_selectedBlockIndex];
-			_console  = GetNode("CameraBase/Camera/Control") as Control;
+			_console = GetNode("CameraBase/Camera/Control") as Control;
 
 			_fpCam = GetNode<Camera>("CameraBase/Camera");
 			_raycast = GetNode<RayCast>("CameraBase/Camera/RayCast");
 			_infoLabel = GetNode<Label>("CameraBase/Camera/Debug_line_01");
 
-
-			Input.SetMouseMode(Input.MouseMode.Captured);
+			if (!Engine.EditorHint)
+			{
+				Input.SetMouseMode(Input.MouseMode.Captured);	
+			}
+			else
+			{
+				
+			}
+			
 		}
 
 		public override void _Process(float delta)
 		{
-			if (Input.IsActionJustPressed("pause"))
-			{
-				toggle_pause();
-			}
+			var forward_cam = _fpCam.GlobalTransform.basis;
+			var forward = -forward_cam.z;
 			
-			if (Input.IsActionJustPressed("console"))
+			WorldScript.lines.DrawRay(_fpCam.Transform.origin, forward * 5, Colors.Red, delta);
+			
+			if (!Engine.EditorHint)
 			{
-				_console.Visible = !_console.Visible;
-
-				if (_console.Visible)
+				if (Input.IsActionJustPressed("pause"))
 				{
-					Input.SetMouseMode(Input.MouseMode.Visible);   
+					toggle_pause();
 				}
-				else
+				if (Input.IsActionJustPressed("console"))
 				{
-					Input.SetMouseMode(Input.MouseMode.Captured);
+					_console.Visible = !_console.Visible;
+
+					if (_console.Visible)
+					{
+						Input.SetMouseMode(Input.MouseMode.Visible);   
+					}
+					else
+					{
+						Input.SetMouseMode(Input.MouseMode.Captured);
+					}
+
+					_paused = _console.Visible;
 				}
 
-				_paused = _console.Visible;
+				if (Input.IsActionJustReleased("scroll_up"))
+				{
+					_selectedBlockIndex -= 1;
+				
+					if (_selectedBlockIndex < 0)
+					{
+						_selectedBlockIndex = BlockHelper.IdToString.Count -1;
+					}
+				}
+				else if (Input.IsActionJustReleased("scroll_down"))
+				{
+					_selectedBlockIndex += 1;
+
+					if (_selectedBlockIndex > BlockHelper.IdToString.Count - 1)
+					{
+						_selectedBlockIndex = 0;
+					}
+				}
+
+				_selectedBlock = BlockHelper.IdToString[_selectedBlockIndex];	
 			}
 
 			if (!_paused)
 			{
 				//World.Get_aabbs(0, AABB);
-				//AABB.DrawDebug();
+				AABB?.DrawDebug();
 			}
-
-
-			if (Input.IsActionJustReleased("scroll_up"))
-			{
-				_selectedBlockIndex -= 1;
-				
-				if (_selectedBlockIndex < 0)
-				{
-					_selectedBlockIndex = BlockHelper.IdToString.Count -1;
-				}
-			}
-			else if (Input.IsActionJustReleased("scroll_down"))
-			{
-				_selectedBlockIndex += 1;
-
-				if (_selectedBlockIndex > BlockHelper.IdToString.Count - 1)
-				{
-					_selectedBlockIndex = 0;
-				}
-			}
-
-			_selectedBlock = BlockHelper.IdToString[_selectedBlockIndex];
 			
 
 		}
 
 		public override void _PhysicsProcess(float delta)
 		{
-			float cx = Mathf.Floor((Translation.x ) / ChunkCs.Dimension.x);
-			float cz = Mathf.Floor((Translation.z) / ChunkCs.Dimension.x);
+
+			float cx = (float) Math.Floor((Translation.x ) / ChunkCs.Dimension.x);
+			float cz = (float) Math.Floor((Translation.z) / ChunkCs.Dimension.x);
 			float px = Translation.x - cx * ChunkCs.Dimension.x;
 			float py = Translation.y;
 			float pz = Translation.z - cz * ChunkCs.Dimension.x;
-			_infoLabel.Text = $"Selected block {_selectedBlock}, Chunk ({cx}, {cz}) pos ({px}, {py}, {pz})";
+			
+			
+			var forward_cam = _fpCam.GlobalTransform.basis;
+			var forward = -forward_cam.z;
+			
+			_infoLabel.Text = $"Selected block {_selectedBlock}, Chunk ({cx}, {cz}) pos ({px}, {py}, {pz}, CameraDir {forward})";
+			
+			
+			
 
 			if (!_paused)
 			{
-				
-				_controller.Player_move(delta);
+				HitResult result = Raycast.CastInDirection(_fpCam.GlobalTransform.origin,forward, -1, 5);
 
-				if (_raycast?.IsColliding() == true)
+				if (!Engine.EditorHint)
 				{
-					Vector3 pos = _raycast.GetCollisionPoint();
-					Vector3 norm = _raycast.GetCollisionNormal();
+					_controller.Player_move(delta);	
+				}
 
-					if (Input.IsActionJustPressed("click"))
+				if (result.Hit)
+				{
+					Vector3 pos = result.Location;
+					Vector3 norm = new Vector3(0,0,0);
+
+					if (!Engine.EditorHint)
 					{
-						GD.Print("Click");
-						_on_Player_destroy_block(pos, norm);
-					}
-					else if(Input.IsActionJustPressed("right_click"))
-					{
-						if (pos.DistanceTo(Translation) > 1.2)
+						if (Input.IsActionJustPressed("click"))
 						{
-							int by = (int) (Mathf.PosMod(Mathf.Round(pos.y + 1), ChunkCs.Dimension.y) + .5);
-							_on_Player_place_block(pos,norm, _selectedBlock);
-							if (!OnGround )
-							{
-								Translation = new Vector3(Translation.x, by + .5f, Translation.z);   
-							}
+							GD.Print("Click");
+							_on_Player_destroy_block(pos, norm);
 						}
+						else if(Input.IsActionJustPressed("right_click"))
+						{
+							WorldScript.lines.DrawRay(_fpCam.Transform.origin, forward * 5, Colors.Red, delta);
+
+							if (pos.DistanceTo(Translation) > 1.2)
+							{
+								int by = (int) (Mathf.PosMod(Mathf.Round(pos.y + 1), ChunkCs.Dimension.y) + .5);
+								_on_Player_place_block(pos,norm, _selectedBlock);
+								if (!OnGround )
+								{
+									Translation = new Vector3(Translation.x, by + .5f, Translation.z);   
+								}
+							}
 						
+						}	
 					}
 				}
 			}
@@ -162,14 +192,14 @@ namespace MinecraftClone.Player_CS
 		
 		void _on_Player_destroy_block(Vector3 pos, Vector3 norm)
 		{
-			pos -= norm * .5f;
+			//pos -= norm * .5f;
 
-			int cx = (int) Mathf.Floor(pos.x / ChunkCs.Dimension.x);
-			int cz = (int) Mathf.Floor(pos.z / ChunkCs.Dimension.x);
+			int cx = (int) Math.Floor(pos.x / ChunkCs.Dimension.x);
+			int cz = (int) Math.Floor(pos.z / ChunkCs.Dimension.x);
 
-			int bx = (int) (Mathf.PosMod(Mathf.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
-			int by = (int) (Mathf.PosMod(Mathf.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
-			int bz = (int) (Mathf.PosMod(Mathf.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
+			int bx = (int) (Mathf.PosMod((float) Math.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
+			int by = (int) (Mathf.PosMod((float) Math.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
+			int bz = (int) (Mathf.PosMod((float) Math.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
 
 			World?.change_block(cx, cz, bx, by, bz, 0);
 		}
@@ -221,11 +251,13 @@ namespace MinecraftClone.Player_CS
 				if (@event is InputEventMouseMotion mouseEvent)
 				{
 					RotateY(Mathf.Deg2Rad(-(mouseEvent.Relative.x * MouseSensitivity)));
+					Camdir.x = RotationDegrees.y;
 					float xDelta = mouseEvent.Relative.y * MouseSensitivity;
 
 					if (_cameraXRotation + xDelta > -90 && _cameraXRotation + xDelta < 90)
 					{
 						_fpCam?.RotateX(Mathf.Deg2Rad(-xDelta));
+						Camdir.y = _fpCam.RotationDegrees.x;
 						_cameraXRotation += xDelta;
 					}
 

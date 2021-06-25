@@ -15,6 +15,10 @@ run/main_scene="res://Scenes/Spatial.tscn"
 config/use_custom_user_dir=true
 config/icon="res://Resources/icon.png"
 
+[autoload]
+
+DebugLine="*res://Debug_and_Logging/DebugLine.cs"
+
 [display]
 
 window/vsync/use_vsync=false

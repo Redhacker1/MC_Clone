@@ -3,11 +3,13 @@ using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.Player_CS;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
+using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.IO;
 using Path = System.IO.Path;
 
 namespace MinecraftClone.World_CS.Utility
 {
+	[Tool]
 	public class WorldScript : Node
 	{
 		Vector2 _chunkPos;
@@ -16,6 +18,8 @@ namespace MinecraftClone.World_CS.Utility
 		int _chunkZ = 1;
 		Player _player;
 
+		public static DebugLines lines = new DebugLines();
+
 		public Logger Logger = new Logger(Path.Combine(OS.GetExecutablePath().GetBaseDir(),"Logs"), "DebugFile", ConsoleLibrary.DebugPrint);
 
 		static public ProcWorld _pw;
@@ -23,6 +27,7 @@ namespace MinecraftClone.World_CS.Utility
 		// Called when the node enters the scene tree for the first time.
 		public override void _Ready()
 		{
+			AddChild(lines);
 			BlockHelper.RegisterBaseBlocks();
 			WorldManager.FindWorlds();
 			WorldData worldPath = WorldManager.CreateWorld();

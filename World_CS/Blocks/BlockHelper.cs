@@ -71,17 +71,24 @@ namespace MinecraftClone.World_CS.Blocks
         {
             if (sides == null) throw new ArgumentNullException(nameof(sides));
             BlockStruct block = new BlockStruct {Transparent = false, NoCollision = false};
-            if (tags.Contains("Transparent"))
+            if (tags.Contains("Transparent", StringComparer.CurrentCultureIgnoreCase))
             {
                 block.Transparent = true;
                 tags.Remove("Transparent");
             }
-            if (tags.Contains("No Collision"))
+
+            if (tags.Contains("air", StringComparer.CurrentCultureIgnoreCase))
+            {
+                tags.Remove("Air");
+                tags.Remove("air");
+                block.Air = true;
+            }
+            if (tags.Contains("No Collision", StringComparer.CurrentCultureIgnoreCase))
             {
                 block.Transparent = true;
                 tags.Remove("No Collision");
             }
-            if (tags.Contains("Flat"))
+            if (tags.Contains("Flat", StringComparer.CurrentCultureIgnoreCase))
             {
                 block.Only = sides[0];
             }

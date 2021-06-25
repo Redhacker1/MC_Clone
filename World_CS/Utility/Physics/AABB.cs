@@ -19,19 +19,19 @@ namespace MinecraftClone.World_CS.Utility.Physics
         {
             // TODO: Find a good way to identify these 
 
-            ProcWorld.lines.Drawline(MinLoc, MaxLoc, Colors.Red);
+            WorldScript.lines.Drawline(MinLoc, MaxLoc, Colors.Red);
         
-            ProcWorld.lines.Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), MaxLoc, Colors.Black); 
+            WorldScript.lines.Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), MaxLoc, Colors.Black); 
             
-            ProcWorld.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black);
+            WorldScript.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black);
             
-            ProcWorld.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black);
+            WorldScript.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black);
             
-            ProcWorld.lines.Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black);
+            WorldScript.lines.Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black);
             
-            ProcWorld.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black);
+            WorldScript.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black);
             
-            ProcWorld.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black);
+            WorldScript.lines.Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black);
             
             
             

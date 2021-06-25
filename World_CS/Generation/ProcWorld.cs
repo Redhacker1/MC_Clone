@@ -9,6 +9,7 @@ using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Noise;
+using MinecraftClone.World_CS.Utility;
 using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.IO;
 using MinecraftClone.World_CS.Utility.Threading;
@@ -19,6 +20,8 @@ namespace MinecraftClone.World_CS.Generation
 {
 	public class ProcWorld : Spatial
 	{
+
+		public static ProcWorld instance;
 		
 		ThreadPoolClass _threads = new ThreadPoolClass();
 		
@@ -44,12 +47,15 @@ namespace MinecraftClone.World_CS.Generation
 		
 
 		Thread _terrainThread;
-
-		public static DebugLines lines;
+		
 
 		public override void _Ready()
 		{
-			
+			if (instance != null)
+				return;
+			else
+				instance = this;
+
 			ConsoleLibrary.DebugPrint("Starting procworld");
 			
 			ConsoleLibrary.DebugPrint("Preparing Threadpool");
@@ -70,10 +76,6 @@ namespace MinecraftClone.World_CS.Generation
 			// Preparing static terrain thread 
 			_terrainThread = new Thread(_thread_gen);
 			_terrainThread.Start();
-			
-			// Add debugLines to scene
-			lines = new DebugLines();
-			AddChild(lines);
 
 			ConsoleLibrary.DebugPrint("Binding Console Commands");
 			// Console Binds
@@ -220,7 +222,7 @@ namespace MinecraftClone.World_CS.Generation
 						AABB c = new AABB(new Vector3(x, y, z), new Vector3(x + 1, y + 1, z + 1));
 						aabbs.Add(c);
 						
-						//c.DrawDebug();
+						c.DrawDebug();
 					}
 				}
 			}
@@ -230,11 +232,11 @@ namespace MinecraftClone.World_CS.Generation
 
 		void DebugLine(Vector3 A, Vector3 B)
 		{
-			lines.Drawline(A, B, Colors.Red);
+			WorldScript.lines.Drawline(A, B, Colors.Red);
 		}
 
 
-		byte GetBlockIdFromWorldPos(int X, int Y, int Z)
+		public byte GetBlockIdFromWorldPos(int X, int Y, int Z)
 		{
 			
 			int Cx = (int) Math.Floor(X / ChunkCs.Dimension.x);
@@ -261,9 +263,13 @@ namespace MinecraftClone.World_CS.Generation
 		/// <param name="Y"></param>
 		/// <param name="Z"></param>
 		/// <returns>whether it is safe to write or read from the block in the chunk</returns>
-		static bool ValidPlace(int X, int Y, int Z)
+		public static bool ValidPlace(int X, int Y, int Z)
 		{
-			if (X < 0 || X >= ChunkCs.Dimension.x || Z < 0 || Z >= ChunkCs.Dimension.z || Y < 0 || Y >= ChunkCs.Dimension.y)
+			if (X < 0 || X >= ChunkCs.Dimension.x || Z < 0 || Z >= ChunkCs.Dimension.z)
+			{
+				return false;
+			}
+			else if(Y < 0 || Y > ChunkCs.Dimension.y - 1)
 			{
 				return false;
 			}

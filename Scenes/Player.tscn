@@ -12,15 +12,13 @@ mid_height = 0.8
 script = ExtResource( 1 )
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, -1.62921e-07, -1, 0, 1, -1.62921e-07, 0, 0, 0 )
+transform = Transform( 1, 0, 0, 0, -1.62921e-07, -1, 0, 1, -1.62921e-07, 0, -0.5, 0 )
 mesh = SubResource( 1 )
 material/0 = null
 
 [node name="CameraBase" type="Spatial" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.861538, 0 )
 
 [node name="Camera" type="Camera" parent="CameraBase"]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0 )
 far = 500.0
 
 [node name="RayCast" type="RayCast" parent="CameraBase/Camera"]
@@ -34,7 +32,7 @@ texture = ExtResource( 3 )
 [node name="Debug_line_01" type="Label" parent="CameraBase/Camera"]
 margin_right = 40.0
 margin_bottom = 14.0
-text = "Block: "
+text = "Selected block Air, Chunk (0, 0) pos (0, 0, 0, CameraDir (0, 0, 0))"
 __meta__ = {
 "_edit_use_anchors_": false
 }

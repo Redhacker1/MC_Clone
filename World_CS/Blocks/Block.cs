@@ -7,6 +7,7 @@ namespace MinecraftClone.World_CS.Blocks
 	{
 		public bool Transparent;
 		public bool NoCollision;
+		public bool Air;
 		public Vector2 Top;
 		public Vector2 Bottom;
 		public Vector2 Left;
