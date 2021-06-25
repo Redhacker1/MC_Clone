@@ -6,5 +6,6 @@ namespace MinecraftClone.World_CS.Utility.Physics
     {
         public bool Hit;
         public Vector3 Location;
+        public Vector3 Normal;
     }
 }

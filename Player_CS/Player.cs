@@ -161,7 +161,7 @@ namespace MinecraftClone.Player_CS
 				if (result.Hit)
 				{
 					Vector3 pos = result.Location;
-					Vector3 norm = new Vector3(0,0,0);
+					Vector3 norm = result.Normal;
 
 					if (!Engine.EditorHint)
 					{

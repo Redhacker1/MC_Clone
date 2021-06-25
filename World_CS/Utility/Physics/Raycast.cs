@@ -72,42 +72,111 @@ namespace MinecraftClone.World_CS.Utility.Physics
         {
             HitResult outResult = new HitResult();
             
-            Vector3 position = Origin;
-            Vector3 direction = Direction;
+            int x = (int) Mathf.Round(Origin.x);
+            int y = (int) Mathf.Round(Origin.y);
+            int z = (int) Mathf.Round(Origin.z);
 
-            Vector3 sign = new Vector3(); // dda stuff
 
-            for (int i = 0; i < 3; ++i)
-                sign[i] = direction[i] > 0 ? 1 : 0;
+            float dx = Direction.x;
+            float dy = Direction.y;
+            float dz = Direction.z;
 
-            for (int i = 0; i < MaxVoxeldistance; ++i)
+            int stepX = Signum(dx);
+            int stepY = Signum(dy);
+            int stepZ = Signum(dz);
+
+            float tMaxX = Intbound(Origin.x - 0.5f, Direction.x);
+            float tMaxY = Intbound(Origin.y - 0.5f, Direction.y);
+            float tMaxZ = Intbound(Origin.z - 0.5f, Direction.z);
+
+            float tDeltaX = stepX / dx;
+            float tDeltaY = stepY / dy;
+            float tDeltaZ = stepZ / dz;
+
+            Vector3 Normal = new Vector3();
+
+            while (true)
             {
-                Vector3 tvec = ((position + sign) - position) / direction;
                 
-                float t = Math.Min(tvec.x, Math.Min(tvec.y, tvec.z));
-
-                position += direction * (t + 0.001f); // +0.001 is an epsilon value so that you dont get precision issues
- 
                 // Get the position at the current ray position
-                byte id = ProcWorld.instance.GetBlockIdFromWorldPos((int) position.x, (int) position.y, (int) position.z);
+                byte id = ProcWorld.instance.GetBlockIdFromWorldPos(x, y, z);
 
-                if (id != 0) // 0 here, just means air. This statement just says that you've hit a block IF the current ray march step *isnt* air.
-                { 
-                    Vector3 normal = new Vector3();
-                    for (int j = 0; j < 3; ++j)
+                if (tMaxX < tMaxY) 
+                {
+                    if (tMaxX < tMaxZ) 
                     {
-                        normal[j] = (t == tvec[j]) ? 1 : 0;
-
-                        if (sign[j] == 1)
+                        if (tMaxX > MaxVoxeldistance)
                         {
-                            normal[j] = -normal[j];
+                            break;
                         }
+                        // Update which cube we are now in.
+                        x += stepX;
+                        // Adjust tMaxX to the next X-oriented boundary crossing.
+                        tMaxX += tDeltaX;
+                        // Record the normal vector of the cube face we entered.
+                        Normal.x = -stepX;
+                        Normal.y = 0;
+                        Normal.z = 0;
+                    } 
+                    else 
+                    {
+                        if (tMaxZ > MaxVoxeldistance)
+                        {
+                            break;
+                        }
+                        z += stepZ;
+                        tMaxZ += tDeltaZ;
+                        Normal.x = 0;
+                        Normal.y = 0;
+                        Normal.z = -stepZ;
                     }
-
-                    return outResult;
+                } 
+                else 
+                {
+                    if (tMaxY < tMaxZ) 
+                    {
+                        if (tMaxY > MaxVoxeldistance)
+                        {
+                            break;
+                        }
+                        y += stepY;
+                        tMaxY += tDeltaY;
+                        Normal.x = 0;
+                        Normal.y = -stepY;
+                        Normal.z = 0;
+                    }
+                    else 
+                    {
+                        // Identical to the second case, repeated for simplicity in
+                        // the conditionals.
+                        if (tMaxZ > MaxVoxeldistance)
+                        {
+                            break;
+                        }
+                        z += stepZ;
+                        tMaxZ += tDeltaZ;
+                        Normal.x = 0;
+                        Normal.y = 0;
+                        Normal.z = -stepZ;
+                    }
+                }
+                
+                // TODO: Add Collision masks to allow for more selective picking of blocks in the world.
+                if (id != 0) // 0 here, just means air. This statement just says that you've hit a block IF the current ray march step is not air.
+                {
+                    outResult.Hit = true;
+                    outResult.Location =  new Vector3(x, y, z);
+                    outResult.Normal = Normal;
+                    break;
                 }
             }
 
+            if (!Engine.EditorHint)
+            {
+                WorldScript.lines.Drawline(Origin, outResult.Location, Colors.Red, debugtime);
+            }
+            
+            
             return outResult;
         }
 
