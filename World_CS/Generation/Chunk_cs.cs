@@ -1,27 +1,22 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Godot;
-using Godot.Collections;
-using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Chunk_Generator_cs;
-using MinecraftClone.World_CS.Utility.JavaImports;
+using Array = Godot.Collections.Array;
+using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
 
 namespace MinecraftClone.World_CS.Generation
 {
 	public class ChunkCs : Spatial
 	{
-
-
-		const int GenHeight = 60;
-		const int BlockOffset = 0;
-
 		//bool NeedsSaved;
 
 		public Vector2 ChunkCoordinate;
 
-		public readonly System.Collections.Generic.Dictionary<Vector2, ChunkCs> NeighbourChunks = new System.Collections.Generic.Dictionary<Vector2, ChunkCs>();
+		public readonly Dictionary<Vector2, ChunkCs> NeighbourChunks = new Dictionary<Vector2, ChunkCs>();
 
 		static readonly Random Rng = new Random();
 
@@ -61,40 +56,17 @@ namespace MinecraftClone.World_CS.Generation
 
 		public byte[] BlockData = new byte[(int) Dimension.x * (int) Dimension.y * (int) Dimension.z];
 		public readonly bool[,,] VisibilityMask = new bool[(int) Dimension.x, (int) Dimension.y, (int) Dimension.z];
-
-		public ProcWorld World;
-		public int Seed;
 		public bool ChunkDirty;
 
 
-		public void Generate(ProcWorld W, float Cx, float Cz, Vector3 PosOffset)
+		public void InstantiateChunk(ProcWorld W, int Cx, int Cz, Vector3 PosOffset, long Seed)
 		{
 			
 			Translation = new Vector3(Cx * (Dimension.x), 0, Cz * Dimension.x)  - PosOffset;
 			ChunkCoordinate = new Vector2(Cx, Cz);
-
-			World = W;
-			Seed = (int) (Cx * 1000 + Cz);
 			
-			Rng.SetSeed(Seed);
-
-			int[,] groundHeight = new int[(int)Dimension.x, (int)Dimension.x];
-
-			for (int x = 0; x < Dimension.x; x++)
-			{
-				for (int z = 0; z < Dimension.x; z++)
-				{
-					float hNoise = Mathf.Clamp((1f + World.HeightNoise.GetSimplex(x + Translation.x, z + Translation.z))/2,  0, 1);
-					int yHeight = (int) (hNoise * (GenHeight - 1) + 1) + BlockOffset;
-					groundHeight[x,z] = yHeight;
-					_generator.generate_surface(this ,groundHeight[x,z], x, z);
-					_generator.GenerateTopsoil(this ,groundHeight[x,z], x, z);	
-				}
-			}
-			_generator.generate_details(this, Rng, groundHeight);
-			_generator.Generate_Caves(this,Seed, groundHeight);
-
-
+			_generator.Generate(this, Cx, Cz, Seed);
+			
 		}
 		
 		public void Update()
@@ -133,7 +105,7 @@ namespace MinecraftClone.World_CS.Generation
 			
 			_blockMeshInstance.Mesh = blockArrayMesh;
 			
-			ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
+			//ConsoleLibrary.DebugPrint(watch.ElapsedMilliseconds);
 
 
 		}
@@ -173,9 +145,9 @@ namespace MinecraftClone.World_CS.Generation
 			{
 				//GD.Print("External Chunk Write");
 				Vector3 worldCoordinates = new Vector3(X + Translation.x, Y, Z + Translation.z);
-				int localX = (int) (Mathf.PosMod(Mathf.Floor(worldCoordinates.x), Dimension.x) + 0.5);
-				int localY = (int) (Mathf.PosMod(Mathf.Floor(worldCoordinates.y), Dimension.y) + 0.5);
-				int localZ = (int) (Mathf.PosMod(Mathf.Floor(worldCoordinates.z), Dimension.z) + 0.5);
+				int localX = (int) (Mathf.PosMod((float) Math.Floor(worldCoordinates.x), Dimension.x) + 0.5);
+				int localY = (int) (Mathf.PosMod((float) Math.Floor(worldCoordinates.y), Dimension.y) + 0.5);
+				int localZ = (int) (Mathf.PosMod((float) Math.Floor(worldCoordinates.z), Dimension.z) + 0.5);
 
 				int cx = (int) Mathf.Floor(worldCoordinates.x / Dimension.x);
 				int cz = (int) Mathf.Floor(worldCoordinates.z / Dimension.z);
@@ -185,9 +157,9 @@ namespace MinecraftClone.World_CS.Generation
 				{
 					NeighbourChunks[chunkKey]._set_block_data(localX, localY, localZ, B, Overwrite);
 				}
-				else if(World.LoadedChunks.ContainsKey(chunkKey))
+				else if(ProcWorld.instance.LoadedChunks.ContainsKey(chunkKey))
 				{
-					ChunkCs currentChunk = World.LoadedChunks[chunkKey];
+					ChunkCs currentChunk = ProcWorld.instance.LoadedChunks[chunkKey];
 					NeighbourChunks[chunkKey] = currentChunk;
 					currentChunk?._set_block_data(localX,localY,localZ,B,Overwrite);
 				}
@@ -276,17 +248,19 @@ namespace MinecraftClone.World_CS.Generation
 			if (X < 0 || X >= Dimension.x || Z < 0 || Z >= Dimension.z)
 			{
 				
-				int cx = (int) Mathf.Floor(X / Dimension.x);
-				int cz = (int) Mathf.Floor(Z / Dimension.x);
+				int cx = (int) Math.Floor(X / Dimension.x);
+				int cz = (int) Math.Floor(Z / Dimension.x);
 
-				int bx = (int) (Mathf.PosMod(Mathf.Floor(X), Dimension.x));
-				int by = (int) (Mathf.PosMod(Mathf.Floor(Y), Dimension.y));
-				int bz = (int) (Mathf.PosMod(Mathf.Floor(Z), Dimension.x));
+				int bx = (int) (Mathf.PosMod((float) Math.Floor((double)X), Dimension.x));
+				int by = (int) (Mathf.PosMod((float) Math.Floor((double)Y), Dimension.y));
+				int bz = (int) (Mathf.PosMod((float) Math.Floor((double)Z), Dimension.x));
+
+				Vector2 cpos = new Vector2(cx, cz);
 
 
-				if (World.LoadedChunks.ContainsKey(new Vector2(cx, cz)))
+				if (ProcWorld.instance.LoadedChunks.ContainsKey(cpos))
 				{
-					return World.LoadedChunks[new Vector2(cx, cz)].VisibilityMask[bx, by, bz];
+					return ProcWorld.instance.LoadedChunks[cpos].VisibilityMask[bx, by, bz];
 				}
 				return true;
 			}

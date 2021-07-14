@@ -3,7 +3,6 @@ using Godot;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
 using MinecraftClone.World_CS.Utility;
-using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.Physics;
 
 namespace MinecraftClone.Player_CS
@@ -30,7 +29,7 @@ namespace MinecraftClone.Player_CS
 		
 		public const int Speed = 5;
 		public const int JumpVel = 5;
-		int _selectedBlockIndex = 0;
+		byte _selectedBlockIndex;
 
 		PlayerController _controller;
 
@@ -64,17 +63,12 @@ namespace MinecraftClone.Player_CS
 			{
 				Input.SetMouseMode(Input.MouseMode.Captured);	
 			}
-			else
-			{
-				
-			}
-			
 		}
 
 		public override void _Process(float delta)
 		{
 			var forward_cam = _fpCam.GlobalTransform.basis;
-			var forward = -forward_cam.z;
+			var forward = -forward_cam.z.Normalized();
 			
 			WorldScript.lines.DrawRay(_fpCam.Transform.origin, forward * 5, Colors.Red, delta);
 			
@@ -102,32 +96,17 @@ namespace MinecraftClone.Player_CS
 
 				if (Input.IsActionJustReleased("scroll_up"))
 				{
-					_selectedBlockIndex -= 1;
-				
-					if (_selectedBlockIndex < 0)
-					{
-						_selectedBlockIndex = BlockHelper.IdToString.Count -1;
-					}
+
+					_selectedBlockIndex = (byte) Math.Max(0, _selectedBlockIndex - 1);
 				}
 				else if (Input.IsActionJustReleased("scroll_down"))
 				{
-					_selectedBlockIndex += 1;
-
-					if (_selectedBlockIndex > BlockHelper.IdToString.Count - 1)
-					{
-						_selectedBlockIndex = 0;
-					}
+					_selectedBlockIndex = (byte) Math.Min( BlockHelper.BlockTypes.Count - 1, _selectedBlockIndex + 1);
 				}
 
 				_selectedBlock = BlockHelper.IdToString[_selectedBlockIndex];	
 			}
 
-			if (!_paused)
-			{
-				//World.Get_aabbs(0, AABB);
-				AABB?.DrawDebug();
-			}
-			
 
 		}
 
@@ -165,6 +144,7 @@ namespace MinecraftClone.Player_CS
 
 					if (!Engine.EditorHint)
 					{
+						WorldScript.lines.DrawBlock((int)pos.x, (int)pos.y, (int)pos.z);
 						if (Input.IsActionJustPressed("click"))
 						{
 							GD.Print("Click");
@@ -195,11 +175,12 @@ namespace MinecraftClone.Player_CS
 			//pos -= norm * .5f;
 
 			int cx = (int) Math.Floor(pos.x / ChunkCs.Dimension.x);
-			int cz = (int) Math.Floor(pos.z / ChunkCs.Dimension.x);
+			int cz = (int) Math.Floor(pos.z / ChunkCs.Dimension.z);
 
 			int bx = (int) (Mathf.PosMod((float) Math.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
 			int by = (int) (Mathf.PosMod((float) Math.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
 			int bz = (int) (Mathf.PosMod((float) Math.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
+
 
 			World?.change_block(cx, cz, bx, by, bz, 0);
 		}
@@ -209,14 +190,14 @@ namespace MinecraftClone.Player_CS
 		{
 			pos += norm * .5f;
 
-			int cx = (int) Mathf.Floor(pos.x / ChunkCs.Dimension.x);
-			int cz = (int) Mathf.Floor(pos.z / ChunkCs.Dimension.x);
+			int cx = (int) Math.Floor(pos.x / ChunkCs.Dimension.x);
+			int cz = (int) Math.Floor(pos.z / ChunkCs.Dimension.x);
 
-			int bx = (int) (Mathf.PosMod(Mathf.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
-			int by = (int) (Mathf.PosMod(Mathf.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
-			int bz = (int) (Mathf.PosMod(Mathf.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
+			int bx = (int) (Mathf.PosMod((float) Math.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
+			int by = (int) (Mathf.PosMod((float) Math.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
+			int bz = (int) (Mathf.PosMod((float) Math.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
 
-			World?.change_block(cx, cz, bx, by, bz, BlockHelper.StringToId[type]);	
+			World?.change_block(cx, cz, bx, by, bz, _selectedBlockIndex);	
 			
 		}
 		
@@ -224,15 +205,13 @@ namespace MinecraftClone.Player_CS
 		void _on_Player_highlight_block(Vector3 pos, Vector3 norm)
 		{
 
-			pos -= norm * .5f;
-
-			double bx = Mathf.Floor(pos.x) + 0.5;
-			double by = Mathf.Floor(pos.y) + 0.5;
-			double bz = Mathf.Floor(pos.z) + 0.5;
+			double bx = Math.Floor(pos.x) + 0.5;
+			double by = Math.Floor(pos.y) + 0.5;
+			double bz = Math.Floor(pos.z) + 0.5;
 			
-			double px = Mathf.Floor(Translation.x) + 0.5;
-			double py = Mathf.Floor(Translation.y) + 0.5;
-			double pz = Mathf.Floor(Translation.z) + 0.5;
+			double px = Math.Floor(Translation.x) + 0.5;
+			double py = Math.Floor(Translation.y) + 0.5;
+			double pz = Math.Floor(Translation.z) + 0.5;
 			
 			
 			//CubeLocation = new Vector3((float) (bx - px), (float) (by - py), (float) (bz - pz));

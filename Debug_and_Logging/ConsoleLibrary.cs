@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Godot;
 
 namespace MinecraftClone.Debug_and_Logging
 {
@@ -190,10 +191,17 @@ namespace MinecraftClone.Debug_and_Logging
 
         public static void DebugPrint(object Text)
         {
-            lock (Printlock)
+            if (!Engine.EditorHint)
             {
-                _scrollback.Append(Text.ToString()  + '\n');
-                _printDelegate(_scrollback.ToString());    
+                lock (Printlock)
+                {
+                    _scrollback.Append(Text.ToString()  + '\n');
+                    _printDelegate(_scrollback.ToString());    
+                }   
+            }
+            else
+            {
+                GD.Print(Text);
             }
         }
 

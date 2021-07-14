@@ -1,6 +1,7 @@
+using System;
 using Godot;
 using MinecraftClone.World_CS.Generation.Noise;
-using MinecraftClone.World_CS.Utility.JavaImports;
+using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
 
 namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 {
@@ -8,19 +9,23 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 	{
 		public override void generate_surface(ChunkCs Chunk, int Height, int X, int Z)
 		{
-			for (int I = 0; I < Height; I++)
+			for (int Y = 0; Y < Height; Y++)
 			{
-				Chunk._set_block_data(X,I,Z, 10);
+				//GD.Print($"{X},{Y},{Z}");
+				Chunk._set_block_data(X,Y,Z, 10);
 			}
 		}
 
-		public override void GenerateTopsoil(ChunkCs Chunk, int Height, int X, int Z)
-		{
-			NoiseUtil HeightNoise = new NoiseUtil();
-			HeightNoise.SetSeed(Chunk.Seed);
+		public override void GenerateTopsoil(ChunkCs Chunk, int Height, int X, int Z, long seed)
+		{	NoiseUtil HeightNoise = new NoiseUtil();
+			HeightNoise.SetSeed(seed);
 			HeightNoise.SetFractalOctaves(100);
 
-            int Depth = (int) Mathf.Lerp(1,6,Mathf.Abs(HeightNoise.GetSimplex(X + Chunk.ChunkCoordinate.x,Chunk.Seed,Z + Chunk.ChunkCoordinate.y)));
+
+			float noise = HeightNoise.GetSimplex(X + Chunk.ChunkCoordinate.x, seed, Z + Chunk.ChunkCoordinate.y);
+			noise /= 2;
+
+            int Depth = (int) Mathf.Lerp(1,6,Math.Abs(noise));
 
             for (int I = 0; I < Depth; I++)
 			{

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 
 namespace MinecraftClone.World_CS.Utility.Debug
@@ -79,6 +78,28 @@ namespace MinecraftClone.World_CS.Utility.Debug
                 count -= 1;
             }
 
+        }
+
+        public void DrawBlock(int X, int Y, int Z)
+        {
+            Vector3 MinLoc = new Vector3(X, Y, Z);
+            Vector3 MaxLoc = new Vector3(X + 1, Y + 1, Z + 1);
+            
+            Drawline(MinLoc, MaxLoc, Colors.Red);
+        
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), MaxLoc, Colors.Black,2);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MaxLoc, Colors.Black,2);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black,2);
+
+            
+            
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
+            
+            
+            
         }
 
         public void Drawline(Vector3 start, Vector3 end, Color color, float time = 0.0f)

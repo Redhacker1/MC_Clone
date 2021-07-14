@@ -9,25 +9,15 @@ public abstract class Entity: Spatial
     {
         public Vector3 Pos = new Vector3(10, 10, 10);
         public Vector3 PosDelta;
-        float _lastTick;
         public AABB AABB;
-        public float XRotation;
-        public float YRotation;
+        public double XRotation;
+        public double YRotation;
         public bool OnGround;
-        public bool InWater;
-        public float AABBWidth = .9f;
-        protected float AABBHeight = 1.95f;
-        public float EyeOffset = 1.6f;
+        public double AABBWidth = .9f;
+        protected double AABBHeight = 1.95f;
+        public double EyeOffset = 1.6f;
 
         public ProcWorld Level;
-
-        //public abstract void Tick();
-
-        public override void _Process(float delta)
-        {
-            base._Process(delta);
-            _lastTick = delta;
-        }
 
         public virtual void Move(Vector3 a)
         {
@@ -38,8 +28,6 @@ public abstract class Entity: Spatial
             }
 
             Vector3 _a = new Vector3(a.x, a.y, a.z);
-
-            InWater = false;
 
             Vector3 o = new Vector3(_a.x, _a.y, _a.z);
 
@@ -69,7 +57,7 @@ public abstract class Entity: Spatial
             if (Math.Abs(o.z - _a.z) > double.Epsilon) PosDelta.z = 0;
 
             Pos.x = (AABB.MinLoc.x + AABB.MaxLoc.x) / 2.0f;
-            Pos.y = AABB.MinLoc.y + EyeOffset;
+            Pos.y = (float) (AABB.MinLoc.y + EyeOffset);
             Pos.z = (AABB.MinLoc.z + AABB.MaxLoc.z) / 2.0f;
 
             Translation = new Vector3(Pos.x, Pos.y, Pos.z);
@@ -91,17 +79,17 @@ public abstract class Entity: Spatial
         public virtual void SetPos(Vector3 pos)
         {
             Pos = pos;
-            float w = AABBWidth / 2.0f;
-            float h = AABBHeight / 2.0f;
+            double w = AABBWidth / 2.0f;
+            double h = AABBHeight / 2.0f;
             
-            AABB = new AABB(new Vector3(pos.x - w, pos.y - h, pos.z - w), new Vector3(pos.x + w, pos.y + h, pos.z + w));
+            AABB = new AABB(new Vector3((float) (pos.x - w), (float) (pos.y - h), (float) (pos.z - w)), new Vector3((float) (pos.x + w), (float) (pos.y + h), (float) (pos.z + w)));
             Translation = pos;
         }
 
-        public virtual void Rotate(float rotX, float rotY)
+        public virtual void Rotate(double rotX, double rotY)
         {
-            XRotation = (float)(XRotation - rotX * 0.15);
-            YRotation = (float)((YRotation + rotY * 0.15) % 360.0);
+            XRotation = (XRotation - rotX * 0.15);
+            YRotation = ((YRotation + rotY * 0.15) % 360.0);
             if (XRotation < -90.0f) XRotation = -90.0f;
             if (XRotation > 90.0f) XRotation = 90.0f;
         }

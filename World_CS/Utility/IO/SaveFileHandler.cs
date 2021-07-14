@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Godot;
 using MinecraftClone.World_CS.Generation;
@@ -52,8 +51,7 @@ namespace MinecraftClone.World_CS.Utility.IO
                     }
                 }   
             }
-
-            data.World = worldref;
+            
             return data;
         }
     }

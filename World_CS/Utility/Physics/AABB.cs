@@ -1,5 +1,4 @@
 ﻿using Godot;
-using MinecraftClone.World_CS.Generation;
 
 namespace MinecraftClone.World_CS.Utility.Physics
 {
@@ -97,9 +96,9 @@ namespace MinecraftClone.World_CS.Utility.Physics
 
         public bool Intersects(AABB c)
         {
-            return !(this.MaxLoc.x <= c.MinLoc.x || this.MaxLoc.y <= c.MinLoc.y ||
-                     this.MaxLoc.z <= c.MinLoc.z || this.MinLoc.x >= c.MaxLoc.x ||
-                     this.MinLoc.y >= c.MaxLoc.y || this.MinLoc.z >= c.MaxLoc.z);
+            return !(MaxLoc.x <= c.MinLoc.x || MaxLoc.y <= c.MinLoc.y ||
+                     MaxLoc.z <= c.MinLoc.z || MinLoc.x >= c.MaxLoc.x ||
+                     MinLoc.y >= c.MaxLoc.y || MinLoc.z >= c.MaxLoc.z);
         }
 
         public void Move(Vector3 a)

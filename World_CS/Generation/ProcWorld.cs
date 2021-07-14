@@ -1,8 +1,9 @@
-/* TODO: This is starting to become a SuperClass with catch-all functionality, might be best to seperate it out.
+/* TODO: This is starting to become a SuperClass with catch-all functionality, might be best to separate it out.
 	Might be best to move some of the more chunk oriented methods into the chunkCS class that do not use the chunk class statically.
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
@@ -10,10 +11,10 @@ using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation.Noise;
 using MinecraftClone.World_CS.Utility;
-using MinecraftClone.World_CS.Utility.Debug;
 using MinecraftClone.World_CS.Utility.IO;
 using MinecraftClone.World_CS.Utility.Threading;
 using AABB = MinecraftClone.World_CS.Utility.Physics.AABB;
+using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
 using Thread = System.Threading.Thread;
 
 namespace MinecraftClone.World_CS.Generation
@@ -28,14 +29,14 @@ namespace MinecraftClone.World_CS.Generation
 		// Max chunks radius comes out to (_loadRadius*2)^2 
 		int _loadRadius = 16;
 
-		readonly object _chunkMutex = new object(); 
+		readonly object _chunkMutex = new object();
+
+		public static Random WorldRandom;
+		public static long WorldSeed;
 		
 		public WorldData World;
 
-		public readonly Dictionary<Vector2, ChunkCs> LoadedChunks = new Dictionary<Vector2, ChunkCs>();
-
-		public readonly NoiseUtil HeightNoise = new NoiseUtil();
-		public readonly object Mutex = new object();
+		public readonly ConcurrentDictionary<Vector2, ChunkCs> LoadedChunks = new ConcurrentDictionary<Vector2, ChunkCs>();
 
 		bool _bKillThread;
 		Vector2 _chunkPos; 
@@ -47,14 +48,19 @@ namespace MinecraftClone.World_CS.Generation
 		
 
 		Thread _terrainThread;
+
+		public ProcWorld(long seed)
+		{
+			WorldSeed = seed;
+			WorldRandom = new Random(seed); 
+		}
 		
 
 		public override void _Ready()
 		{
 			if (instance != null)
 				return;
-			else
-				instance = this;
+			instance = this;
 
 			ConsoleLibrary.DebugPrint("Starting procworld");
 			
@@ -67,11 +73,6 @@ namespace MinecraftClone.World_CS.Generation
 			// Sets the blocks used in the base game up.
 			BlockHelper.RegisterBaseBlocks();
 			
-			ConsoleLibrary.DebugPrint("Creating noise");
-			// Sets Noise settings
-			HeightNoise.SetFractalOctaves(100); 
-			HeightNoise.SetFractalGain(100);
-
 			ConsoleLibrary.DebugPrint("Creating Terrain Gen thread");
 			// Preparing static terrain thread 
 			_terrainThread = new Thread(_thread_gen);
@@ -176,7 +177,7 @@ namespace MinecraftClone.World_CS.Generation
 				else
 				{
 					C = new ChunkCs();
-					C.Generate(this, Cx, Cz, Vector3.Zero);	
+					C.InstantiateChunk(this, Cx, Cz, Vector3.Zero, WorldSeed);	
 				}
 				lock (_chunkMutex)
 				{
@@ -221,8 +222,6 @@ namespace MinecraftClone.World_CS.Generation
 						if (BlockHelper.BlockTypes[block].NoCollision || block == 0) continue;
 						AABB c = new AABB(new Vector3(x, y, z), new Vector3(x + 1, y + 1, z + 1));
 						aabbs.Add(c);
-						
-						c.DrawDebug();
 					}
 				}
 			}
@@ -239,17 +238,17 @@ namespace MinecraftClone.World_CS.Generation
 		public byte GetBlockIdFromWorldPos(int X, int Y, int Z)
 		{
 			
-			int Cx = (int) Math.Floor(X / ChunkCs.Dimension.x);
-			int Cz = (int) Math.Floor(Z / ChunkCs.Dimension.x);
+			int cx = (int) Math.Floor(X / ChunkCs.Dimension.x);
+			int cz = (int) Math.Floor(Z / ChunkCs.Dimension.x);
 
-			int Bx = (int) (Mathf.PosMod(X, ChunkCs.Dimension.x));
-			int By = (int) (Mathf.PosMod(Y, ChunkCs.Dimension.y));
-			int Bz = (int) (Mathf.PosMod(Z, ChunkCs.Dimension.x));
+			int bx = (int) (Mathf.PosMod((float) Math.Floor((double)X), ChunkCs.Dimension.x));
+			int bz = (int) (Mathf.PosMod((float) Math.Floor((double)Z), ChunkCs.Dimension.x));
 
-			if (LoadedChunks.ContainsKey(new Vector2(Cx, Cz)) && ValidPlace(Bx, Y, Bz))
+			Vector2 chunkpos = new Vector2(cx, cz);
+
+			if (LoadedChunks.ContainsKey(chunkpos) && ValidPlace(bx, Y, bz))
 			{
-
-				return LoadedChunks[new Vector2(Cx, Cz)].BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)];
+				return LoadedChunks[chunkpos].BlockData[ChunkCs.GetFlattenedDimension(bx, Y, bz)];
 			}
 
 			return 0;
@@ -269,7 +268,8 @@ namespace MinecraftClone.World_CS.Generation
 			{
 				return false;
 			}
-			else if(Y < 0 || Y > ChunkCs.Dimension.y - 1)
+
+			if(Y < 0 || Y > ChunkCs.Dimension.y - 1)
 			{
 				return false;
 			}
@@ -333,7 +333,7 @@ namespace MinecraftClone.World_CS.Generation
 					{
 						SaveFileHandler.WriteChunkData(LoadedChunks[Cpos].BlockData, LoadedChunks[Cpos].ChunkCoordinate, World);
 						LoadedChunks[Cpos].QueueFree();
-						LoadedChunks.Remove(Cpos);
+						LoadedChunks.TryRemove(Cpos, out _);
 					}	
 				}
 			}

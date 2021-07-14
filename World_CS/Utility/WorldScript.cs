@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.Player_CS;
@@ -34,8 +35,15 @@ namespace MinecraftClone.World_CS.Utility
 			_player = GetNode<Node>("Player") as Player;
 			_player.Level = _pw;
 
-			ConsoleLibrary.DebugPrint("CREATING WORLD");
-			_pw = new ProcWorld {World = worldPath};
+			if (!Engine.EditorHint)
+			{
+				ConsoleLibrary.DebugPrint("CREATING WORLD");	
+			}
+			else
+			{
+				GD.Print("CREATING WORLD (Editor)");
+			}
+			_pw = new ProcWorld(1337) {World = worldPath};
 
 			AddChild(_pw);
 			Connect("tree_exiting", this, "_on_WorldScript_tree_exiting");
@@ -58,14 +66,14 @@ namespace MinecraftClone.World_CS.Utility
 		//  // Called every frame. 'delta' is the elapsed time since the previous frame.
 		public override void _Process(float delta)
 		{
-			if (_player == null || _pw?.Mutex == null) return;
-			_chunkX = (int) Mathf.Floor(_player.Pos.x / ChunkCs.Dimension.x);
-			_chunkZ = (int) Mathf.Floor(_player.Pos.z / ChunkCs.Dimension.x);
+			if (_player == null) return;
+			_chunkX = (int) Math.Floor(_player.Pos.x / ChunkCs.Dimension.x);
+			_chunkZ = (int) Math.Floor(_player.Pos.z / ChunkCs.Dimension.x);
 
 			Vector2 newChunkPos = new Vector2(_chunkX, _chunkZ);
 
 			if (newChunkPos == _chunkPos) return;
-			GD.Print("Chunk Updated");
+			ConsoleLibrary.DebugPrint("Chunk Updated");
 			_chunkPos = newChunkPos;
 			_pw.update_player_pos(_chunkPos);
 		}
