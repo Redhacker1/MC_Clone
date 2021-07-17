@@ -1,50 +1,25 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using Godot;
+using MinecraftClone.Utility.CoreCompatibility;
 using MinecraftClone.World_CS.Generation;
 using File = System.IO.File;
 using Path = System.IO.Path;
 
-namespace MinecraftClone.World_CS.Utility.IO
+using Vector3 = System.Numerics.Vector3;
+using Vector2 = System.Numerics.Vector2;
+
+namespace MinecraftClone.Utility.IO
 {
-    public class ReigonFile : BaseFileHandler
+    public class ChunkFilesV1 : BaseFileHandler
     {
-        const int RegionSize = 32;
-        new const string FileExtension = "rgn";
 
-        static int[] GetRegionFile(int x, int y)
-        {
-            int rx = x / RegionSize;
-            int rz = y / RegionSize;
-            return new[]{rx, rz};
-        }
-
-        public override string GetFilename(Vector2 chunkCoords, WorldData world, bool compressed)
-        {
-            int[] xy = GetRegionFile((int)chunkCoords.x, (int)chunkCoords.y);
-
-            if (compressed)
-            {
-                return $"{xy[0]}{xy[1]}.{FileExtension}_c";
-            }
-            return $"{xy[0]}{xy[1]}.{FileExtension}";
-        }
-
-        public override bool ChunkExists(WorldData world, Vector2 location)
-        {
-            if (File.Exists(GetFilename(location, world, false)))
-            {
-                return true;
-            }
-            return File.Exists(GetFilename(location, world, true));
-        }
-
+        
         public override ChunkCs GetChunkData(WorldData world, Vector2 location, out bool chunkExists)
         {
-            long offsetAmount = (long)location.x * (long)location.y * sizeof(long);
-            bool compressData = false;
+            bool compressed = false;
+            // TODO Come up with newer and shorter filename structure that will work when I batch chunks together
             string filename = GetFilename(location,world,false);
             string filePath = Path.Combine(world.Directory, filename);
             if (!File.Exists(filePath))
@@ -55,25 +30,20 @@ namespace MinecraftClone.World_CS.Utility.IO
                     chunkExists = false;
                     return null;
                 }
-                compressData = true;
+                compressed = true;
             }
-            
             FileStream fs = File.OpenRead(filePath);
+
             DeflateStream compressor = null;
             BinaryReader fileReader = new BinaryReader(fs);
-            
-            if (compressData)
+            if (compressed)
             {
                 compressor = new DeflateStream(fs, CompressionMode.Decompress);
                 fileReader = new BinaryReader(compressor);
             }
-            
-            SaveInfo saveData = new SaveInfo();
-            fileReader.BaseStream.Seek(offsetAmount, SeekOrigin.Begin);
 
-            long chunkStart = fileReader.ReadInt64();
-            fileReader.BaseStream.Seek(chunkStart, SeekOrigin.Begin);
-            
+
+            SaveInfo saveData = new SaveInfo();
             
             // TODO: Version number can be shared in grouped chunks
             saveData.VersionNumber = fileReader.ReadByte();
@@ -109,86 +79,86 @@ namespace MinecraftClone.World_CS.Utility.IO
                 saveData.ChunkBlocks[i] = blockDict[serializedBlockData[i]];
             }
 
-
-            fileReader.Close();
-            compressor?.Close();
+            if (compressed)
+            {
+                compressor.Close();    
+            }
+            
             fs.Close();
 
             ChunkCs referencedChunk = new ChunkCs
             {
                 BlockData = saveData.ChunkBlocks,
                 ChunkCoordinate = saveData.Location,
-                Translation = new Vector3(ChunkCs.Dimension.x * saveData.Location.x, 0, ChunkCs.Dimension.x * saveData.Location.y)
+                Translation = new Vector3(ChunkCs.Dimension.X * saveData.Location.X, 0, ChunkCs.Dimension.X * saveData.Location.Y).CastToGodot()
             };
+            
 
 
             chunkExists = true;
             return referencedChunk;
-
         }
 
-
-        SaveInfo[] GetAllChunksFromFile(string filePath, long offset ,bool compressData)
-        {
-            FileStream fs = File.OpenRead(filePath);
-            DeflateStream compressor;
-            BinaryReader fileReader = new BinaryReader(fs);
-            
-            if (compressData)
-            {
-                compressor = new DeflateStream(fs, CompressionMode.Decompress);
-                fileReader = new BinaryReader(compressor);
-            }
-            
-            SaveInfo[] chunks = new SaveInfo[(int) Math.Pow(RegionSize, 2)];
-
-            for(int i = 0; i < chunks.Length; i++)
-            {
-                fileReader.BaseStream.Seek(i * 8, SeekOrigin.Begin);
-                fileReader.BaseStream.Seek(fileReader.ReadInt64(), SeekOrigin.Begin);
-                SaveInfo saveData = new SaveInfo();
-
-                // TODO: Version number can be shared in grouped chunks
-                saveData.VersionNumber = fileReader.ReadByte();
-            
-                saveData.BlockSize = fileReader.ReadByte();
-                saveData.BiomeId = fileReader.ReadByte();
-            
-                short blockIds = fileReader.ReadInt16();
-
-                Dictionary<byte, byte> blockDict = new Dictionary<byte, byte>();
-                for (int blockIDs = 0; blockIDs < blockIds; blockIDs++)
-                {
-                    // Block ID
-                    byte bid = fileReader.ReadByte();
-                
-                    // Serialized ID
-                    byte sid = fileReader.ReadByte();
-                
-                    blockDict.Add(sid, bid);
-                }
-
-                int x = fileReader.ReadInt32();
-                int y = fileReader.ReadInt32();
-
-                saveData.Location = new Vector2(x, y);
-                // TODO: Add chunk dimensions to file format and have it calculate this value automatically
-                byte[] serializedBlockData = fileReader.ReadBytes(16 * 16 * 384);
-                saveData.ChunkBlocks = new byte[16 * 16 * 384];
-
-                for (int blockPos = 0; blockPos <  serializedBlockData.Length; blockPos++)
-                {
-                    saveData.ChunkBlocks[blockPos] = blockDict[serializedBlockData[blockPos]];
-                }
-                chunks[i] = saveData;
-            }
-
-            return chunks;
-        }
-
-        public override void WriteChunkData(byte[] blocks, Vector2 chunkCoords, WorldData world, bool optimizeSave = true)
+        public void WriteChunkData_new(byte[] blocks, Vector2 chunkCoords, WorldData world, bool optimizeSave = true)
         {
             SaveInfo saveData = SerializeChunkData(blocks,chunkCoords, world, optimizeSave);
+            
+            var chunkdat = new MemoryStream();
+            
+            BinaryWriter fileWriter = new BinaryWriter(chunkdat);
+
+            fileWriter.Write(saveData.VersionNumber);
+            fileWriter.Write(saveData.BlockSize);
+            fileWriter.Write(saveData.BiomeId);
+
+            fileWriter.Write((short)saveData.BlockIdWriter.Count);
+            foreach (KeyValuePair<byte, byte> blockIdPair in saveData.BlockIdWriter)
+            {
+                fileWriter.Write(blockIdPair.Key);
+                fileWriter.Write(blockIdPair.Value);
+            }
+            
+            
+            fileWriter.Write((int)saveData.Location.X);
+            fileWriter.Write((int)saveData.Location.Y);
+
+            foreach (byte block in saveData.ChunkBlocks)
+            {
+                fileWriter.Write(saveData.BlockIdWriter[block]);
+            }
+
+
+            FileStream fs = new FileStream(Path.Combine(world.Directory, GetFilename(chunkCoords, world, optimizeSave)), FileMode.Create);
+
+            
+            if (optimizeSave)
+            {
+
+                string uncompressedPath = Path.Combine(world.Directory, $"{world.Name}_x_{(int)saveData.Location.X}-y_{(int)saveData.Location.Y}.cdat");
+                if (File.Exists(uncompressedPath))
+                {
+                    File.Delete(uncompressedPath);
+                }
+
+                var cdat = Compress(chunkdat.ToArray());
+                fs.Write(cdat, 0, cdat.Length);
+            }
+            else
+            {
+                fs.Write(chunkdat.ToArray(), 0, (int)chunkdat.Length);
+            }
+            
+            fileWriter.Close();
+            chunkdat.Close();
+            fs.Close();
+
+
+        }
+        
+        public override void WriteChunkData(byte[] blocks, Vector2 chunkCoords, WorldData world, bool optimizeSave = true)
+        {
+            WriteChunkData_new(blocks, chunkCoords, world, optimizeSave);
+            /*SaveInfo saveData = SerializeChunkData(blocks,chunkCoords, world, optimizeSave);
             string filename;
 
             filename = GetFilename(chunkCoords, world, optimizeSave);
@@ -209,11 +179,16 @@ namespace MinecraftClone.World_CS.Utility.IO
 
             DeflateStream compressor = null;
             BinaryWriter fileWriter = new BinaryWriter(fs);
-            
             if (optimizeSave)
             {
                 compressor = new DeflateStream(fs,CompressionLevel.Fastest, true);
                 fileWriter = new BinaryWriter(compressor);
+                
+                string uncompressedPath = Path.Combine(world.Directory, $"{world.Name}_x_{(int)saveData.Location.x}-y_{(int)saveData.Location.y}.cdat");
+                if (File.Exists(uncompressedPath))
+                {
+                    File.Delete(uncompressedPath);
+                }
             }
 
             fileWriter.Write(saveData.VersionNumber);
@@ -243,7 +218,23 @@ namespace MinecraftClone.World_CS.Utility.IO
                 compressor.Close();   
             }
             fs.Close();
-
+            
+            */
         }
+        
+        public static byte[] Compress(byte[] data)
+        {
+            byte[] compressArray = null;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionMode.Compress))
+                {
+                    deflateStream.Write(data, 0, data.Length);
+                }
+                compressArray = memoryStream.ToArray();
+            }
+            return compressArray;
+        }
+
     }
 }

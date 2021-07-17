@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using Godot;
+
+using Vector2 = System.Numerics.Vector2;
 using MinecraftClone.World_CS.Generation;
 using File = System.IO.File;
 
-namespace MinecraftClone.World_CS.Utility.IO
+namespace MinecraftClone.Utility.IO
 {
     public static class SaveFileHandler
     {

@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using Godot;
 using MinecraftClone.World_CS.Generation;
 using File = System.IO.File;
 using Path = System.IO.Path;
+using Vector2 = System.Numerics.Vector2;
 
-namespace MinecraftClone.World_CS.Utility.IO
+namespace MinecraftClone.Utility.IO
 {
     public abstract class BaseFileHandler
     {
@@ -20,9 +20,9 @@ namespace MinecraftClone.World_CS.Utility.IO
         {
             if (compressed)
             {
-                return $"{world.Name}_x_{(int) chunkCoords.x}-y_{(int) chunkCoords.y}.{FileExtension}_c";
+                return $"{world.Name}_x_{(int) chunkCoords.X}-y_{(int) chunkCoords.Y}.{FileExtension}_c";
             }
-            return $"{world.Name}_x_{(int)chunkCoords.x}-y_{(int)chunkCoords.y}.{FileExtension}";
+            return $"{world.Name}_x_{(int)chunkCoords.X}-y_{(int)chunkCoords.Y}.{FileExtension}";
 
         }
 

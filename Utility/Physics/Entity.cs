@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using MinecraftClone.Utility.CoreCompatibility;
+using Vector3 = System.Numerics.Vector3;
 using MinecraftClone.World_CS.Generation;
 
-namespace MinecraftClone.World_CS.Utility.Physics
+namespace MinecraftClone.Utility.Physics
 {
 public abstract class Entity: Spatial
     {
@@ -27,40 +29,40 @@ public abstract class Entity: Spatial
                 return;
             }
 
-            Vector3 _a = new Vector3(a.x, a.y, a.z);
+            Vector3 _a = new Vector3(a.X, a.Y, a.Z);
 
-            Vector3 o = new Vector3(_a.x, _a.y, _a.z);
+            Vector3 o = new Vector3(_a.X, _a.Y, _a.Z);
 
             List<AABB> aabbs = Level.Get_aabbs(0, AABB.Expand(_a));
 
             foreach (AABB aabb in aabbs)
             {
-                _a.y = (float)aabb.ClipYCollide(AABB, _a.y);
+                _a.Y = (float)aabb.ClipYCollide(AABB, _a.Y);
             }
-            AABB.Move(new Vector3(0, _a.y, 0));
+            AABB.Move(new Vector3(0, _a.Y, 0));
             foreach (AABB aabb in aabbs)
             {
-                _a.x = (float)aabb.ClipXCollide(AABB, _a.x);
+                _a.X = (float)aabb.ClipXCollide(AABB, _a.X);
             }
-            AABB.Move(new Vector3(_a.x, 0, 0));
+            AABB.Move(new Vector3(_a.X, 0, 0));
             foreach (AABB aabb in aabbs)
             {
-                _a.z = (float)aabb.ClipZCollide(AABB, _a.z);
+                _a.Z = (float)aabb.ClipZCollide(AABB, _a.Z);
             }
-            AABB.Move(new Vector3(0, 0, _a.z));
+            AABB.Move(new Vector3(0, 0, _a.Z));
             
 
-            OnGround = Math.Abs(o.y - _a.y) > double.Epsilon && o.y < 0;
+            OnGround = Math.Abs(o.Y - _a.Y) > double.Epsilon && o.Y < 0;
 
-            if (Math.Abs(o.x - _a.x) > double.Epsilon) PosDelta.x = 0;
-            if (Math.Abs(o.y - _a.y) > double.Epsilon) PosDelta.y = 0;
-            if (Math.Abs(o.z - _a.z) > double.Epsilon) PosDelta.z = 0;
+            if (Math.Abs(o.X - _a.X) > double.Epsilon) PosDelta.X = 0;
+            if (Math.Abs(o.Y - _a.Y) > double.Epsilon) PosDelta.Y = 0;
+            if (Math.Abs(o.Z - _a.Z) > double.Epsilon) PosDelta.Z = 0;
 
-            Pos.x = (AABB.MinLoc.x + AABB.MaxLoc.x) / 2.0f;
-            Pos.y = (float) (AABB.MinLoc.y + EyeOffset);
-            Pos.z = (AABB.MinLoc.z + AABB.MaxLoc.z) / 2.0f;
+            Pos.X = (AABB.MinLoc.X + AABB.MaxLoc.X) / 2.0f;
+            Pos.Y = (float) (AABB.MinLoc.Y + EyeOffset);
+            Pos.Z = (AABB.MinLoc.Z + AABB.MaxLoc.Z) / 2.0f;
 
-            Translation = new Vector3(Pos.x, Pos.y, Pos.z);
+            Translation = new Vector3(Pos.X, Pos.Y, Pos.Z).CastToGodot();
         }
 
         public virtual void MoveRelative(float dx, float dz, float speed)
@@ -72,8 +74,8 @@ public abstract class Entity: Spatial
             double sin = (float)Math.Sin(MathHelper.DegreesToRadians(YRotation));
             double cos = (float)Math.Cos(MathHelper.DegreesToRadians(YRotation));
 
-            PosDelta.x += (dx *= dist) * (float)cos - (dz *= dist) * (float)sin;
-            PosDelta.z += dz * (float)cos + dx * (float)sin;
+            PosDelta.X += (dx *= dist) * (float)cos - (dz *= dist) * (float)sin;
+            PosDelta.Z += dz * (float)cos + dx * (float)sin;
         }
 
         public virtual void SetPos(Vector3 pos)
@@ -82,8 +84,8 @@ public abstract class Entity: Spatial
             double w = AABBWidth / 2.0f;
             double h = AABBHeight / 2.0f;
             
-            AABB = new AABB(new Vector3((float) (pos.x - w), (float) (pos.y - h), (float) (pos.z - w)), new Vector3((float) (pos.x + w), (float) (pos.y + h), (float) (pos.z + w)));
-            Translation = pos;
+            AABB = new AABB(new Vector3((float) (pos.X - w), (float) (pos.Y - h), (float) (pos.Z - w)), new Vector3((float) (pos.X + w), (float) (pos.Y + h), (float) (pos.Z + w)));
+            Translation = pos.CastToGodot();
         }
 
         public virtual void Rotate(double rotX, double rotY)

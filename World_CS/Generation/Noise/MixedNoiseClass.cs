@@ -4,46 +4,48 @@ namespace MinecraftClone.World_CS.Generation.Noise
 {
     public class MixedNoiseClass
     {
-        int iterations = 0;
-        float frequency;
-        int Octaves;
-        
-        
-        
-        long seed;
-        NoiseUtil noise;
+        readonly int _iterations = 0;
+
+        readonly NoiseUtil[] _noiseFilters;
 
         public MixedNoiseClass(int iterations, NoiseUtil noise)
         {
-            this.iterations = iterations;
-            this.noise = noise;
+            this._iterations = iterations;
+            _noiseFilters = new NoiseUtil[iterations];
+            long seed = noise.GetSeed();
+
+            for (int i = 0; i < iterations; i++)
+            {
+                _noiseFilters[i] = new NoiseUtil(noise);
+                _noiseFilters[i].SetSeed(seed * (i + 1));
+            }
+        }
+        
+        public MixedNoiseClass(NoiseUtil[] noiseFilters)
+        {
+            _iterations = noiseFilters.Length;
+            this._noiseFilters = noiseFilters;
         }
 
         public float GetMixedNoiseSimplex(float x, float y, float z)
         {
             float iterationResults = 0;
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < _iterations; i++)
             {
-                noise.SetSeed(seed * (i+1));
-
-                iterationResults += noise.GetSimplexFractal(x,y,z);
+                iterationResults += _noiseFilters[i].GetSimplexFractal(x,y,z);
             }
-            noise.SetSeed(seed);
-            return iterationResults / iterations;
+            return iterationResults / _iterations;
         }
         
         public float GetMixedNoiseSimplex(float x, float y)
         {
             float iterationResults = 0;
 
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < _iterations; i++)
             {
-                noise.SetSeed(seed * (i+1));
-                iterationResults += noise.GetSimplexFractal(x,y);
+                iterationResults += _noiseFilters[i].GetSimplexFractal(x,y);
             }
-            noise.SetSeed(seed);
-
-            return iterationResults / iterations;
+            return iterationResults / _iterations;
         }
     }
 }

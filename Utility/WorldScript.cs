@@ -2,15 +2,16 @@ using System;
 using Godot;
 using MinecraftClone.Debug_and_Logging;
 using MinecraftClone.Player_CS;
+using MinecraftClone.Utility.IO;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
 using MinecraftClone.World_CS.Utility.Debug;
-using MinecraftClone.World_CS.Utility.IO;
 using Path = System.IO.Path;
+using Vector2 = System.Numerics.Vector2;
 
-namespace MinecraftClone.World_CS.Utility
+namespace MinecraftClone.Utility
 {
-	[Tool]
+	//[Tool]
 	public class WorldScript : Node
 	{
 		Vector2 _chunkPos;
@@ -67,8 +68,8 @@ namespace MinecraftClone.World_CS.Utility
 		public override void _Process(float delta)
 		{
 			if (_player == null) return;
-			_chunkX = (int) Math.Floor(_player.Pos.x / ChunkCs.Dimension.x);
-			_chunkZ = (int) Math.Floor(_player.Pos.z / ChunkCs.Dimension.x);
+			_chunkX = (int) Math.Floor(_player.Pos.X / ChunkCs.Dimension.X);
+			_chunkZ = (int) Math.Floor(_player.Pos.Z / ChunkCs.Dimension.Z);
 
 			Vector2 newChunkPos = new Vector2(_chunkX, _chunkZ);
 

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 
-namespace MinecraftClone.World_CS.Utility.Threading
+namespace MinecraftClone.Utility.Threading
 {
     public class PooledThreadClass
     {

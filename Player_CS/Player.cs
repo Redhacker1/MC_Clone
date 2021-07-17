@@ -1,13 +1,16 @@
 using System;
 using Godot;
+using MinecraftClone.Utility;
+using MinecraftClone.Utility.CoreCompatibility;
+using MinecraftClone.Utility.Physics;
 using MinecraftClone.World_CS.Blocks;
 using MinecraftClone.World_CS.Generation;
-using MinecraftClone.World_CS.Utility;
-using MinecraftClone.World_CS.Utility.Physics;
+using Vector2 = System.Numerics.Vector2;
+using Vector3 = System.Numerics.Vector3; 
 
 namespace MinecraftClone.Player_CS
 {
-	[Tool]
+	//[Tool]
 	public class Player : Entity
 	{
 		
@@ -113,15 +116,15 @@ namespace MinecraftClone.Player_CS
 		public override void _PhysicsProcess(float delta)
 		{
 
-			float cx = (float) Math.Floor((Translation.x ) / ChunkCs.Dimension.x);
-			float cz = (float) Math.Floor((Translation.z) / ChunkCs.Dimension.x);
-			float px = Translation.x - cx * ChunkCs.Dimension.x;
+			float cx = (float) Math.Floor((Translation.x ) / ChunkCs.Dimension.X);
+			float cz = (float) Math.Floor((Translation.z) / ChunkCs.Dimension.Z);
+			float px = Translation.x - cx * ChunkCs.Dimension.X;
 			float py = Translation.y;
-			float pz = Translation.z - cz * ChunkCs.Dimension.x;
+			float pz = Translation.z - cz * ChunkCs.Dimension.Z;
 			
 			
 			var forward_cam = _fpCam.GlobalTransform.basis;
-			var forward = -forward_cam.z;
+			var forward = -forward_cam.z.CastToCore();
 			
 			_infoLabel.Text = $"Selected block {_selectedBlock}, Chunk ({cx}, {cz}) pos ({px}, {py}, {pz}, CameraDir {forward})";
 			
@@ -130,21 +133,23 @@ namespace MinecraftClone.Player_CS
 
 			if (!_paused)
 			{
-				HitResult result = Raycast.CastInDirection(_fpCam.GlobalTransform.origin,forward, -1, 5);
-
+				HitResult result = Raycast.CastInDirection(_fpCam.GlobalTransform.origin.CastToCore(),forward, -1, 5);
+				Vector3 pos = result.Location;
+				
 				if (!Engine.EditorHint)
 				{
-					_controller.Player_move(delta);	
+					_controller.Player_move(delta);
+					WorldScript.lines.DrawBlock((int) pos.X, (int) pos.Y, (int) pos.Z, delta);
 				}
 
 				if (result.Hit)
 				{
-					Vector3 pos = result.Location;
 					Vector3 norm = result.Normal;
+					
+					_on_Player_highlight_block(pos, norm, delta);
 
 					if (!Engine.EditorHint)
 					{
-						WorldScript.lines.DrawBlock((int)pos.x, (int)pos.y, (int)pos.z);
 						if (Input.IsActionJustPressed("click"))
 						{
 							GD.Print("Click");
@@ -152,15 +157,15 @@ namespace MinecraftClone.Player_CS
 						}
 						else if(Input.IsActionJustPressed("right_click"))
 						{
-							WorldScript.lines.DrawRay(_fpCam.Transform.origin, forward * 5, Colors.Red, delta);
+							WorldScript.lines.DrawRay(_fpCam.Transform.origin, (forward * 5).CastToGodot(), Colors.Red, delta);
 
-							if (pos.DistanceTo(Translation) > 1.2)
+							if (Vector3.Distance(pos, Translation.CastToCore()) > 1.2)
 							{
-								int by = (int) (Mathf.PosMod(Mathf.Round(pos.y + 1), ChunkCs.Dimension.y) + .5);
+								int by = (int) (MathHelper.Modulo(MathHelper.Round(pos.Y), ChunkCs.Dimension.Y) + .5);
 								_on_Player_place_block(pos,norm, _selectedBlock);
 								if (!OnGround )
 								{
-									Translation = new Vector3(Translation.x, by + .5f, Translation.z);   
+									Translation = new Vector3(Translation.x, by + .5f, Translation.z).CastToGodot();   
 								}
 							}
 						
@@ -172,16 +177,16 @@ namespace MinecraftClone.Player_CS
 		
 		void _on_Player_destroy_block(Vector3 pos, Vector3 norm)
 		{
-			//pos -= norm * .5f;
+			pos += norm * .5f;
 
-			int cx = (int) Math.Floor(pos.x / ChunkCs.Dimension.x);
-			int cz = (int) Math.Floor(pos.z / ChunkCs.Dimension.z);
+			int cx = (int) Math.Floor(pos.X / ChunkCs.Dimension.X);
+			int cz = (int) Math.Floor(pos.Z / ChunkCs.Dimension.Z);
 
-			int bx = (int) (Mathf.PosMod((float) Math.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
-			int by = (int) (Mathf.PosMod((float) Math.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
-			int bz = (int) (Mathf.PosMod((float) Math.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
-
-
+			int bx = (int) (MathHelper.Modulo((float) Math.Floor(pos.X), ChunkCs.Dimension.X) + .5f);
+			int by = (int) (MathHelper.Modulo((float) Math.Floor(pos.Y), ChunkCs.Dimension.Y) + .5f);
+			int bz = (int) (MathHelper.Modulo((float) Math.Floor(pos.Z), ChunkCs.Dimension.Z) + .5f);
+			
+			
 			World?.change_block(cx, cz, bx, by, bz, 0);
 		}
 		
@@ -190,31 +195,31 @@ namespace MinecraftClone.Player_CS
 		{
 			pos += norm * .5f;
 
-			int cx = (int) Math.Floor(pos.x / ChunkCs.Dimension.x);
-			int cz = (int) Math.Floor(pos.z / ChunkCs.Dimension.x);
+			int cx = (int) Math.Floor(pos.X / ChunkCs.Dimension.X);
+			int cz = (int) Math.Floor(pos.Z / ChunkCs.Dimension.Z);
 
-			int bx = (int) (Mathf.PosMod((float) Math.Floor(pos.x), ChunkCs.Dimension.x) + 0.5);
-			int by = (int) (Mathf.PosMod((float) Math.Floor(pos.y), ChunkCs.Dimension.y) + 0.5);
-			int bz = (int) (Mathf.PosMod((float) Math.Floor(pos.z), ChunkCs.Dimension.x) + 0.5);
+			int bx = (int) (MathHelper.Modulo((float) Math.Floor(pos.X), ChunkCs.Dimension.X) + 0.5);
+			int by = (int) (MathHelper.Modulo((float) Math.Floor(pos.Y), ChunkCs.Dimension.Y) + 0.5);
+			int bz = (int) (MathHelper.Modulo((float) Math.Floor(pos.Z), ChunkCs.Dimension.Z) + 0.5);
 
 			World?.change_block(cx, cz, bx, by, bz, _selectedBlockIndex);	
 			
 		}
 		
 
-		void _on_Player_highlight_block(Vector3 pos, Vector3 norm)
+		void _on_Player_highlight_block(Vector3 pos, Vector3 norm, float delta)
 		{
+			pos -= norm * .5f;
+			
+			int cx = (int) Math.Floor(pos.X / ChunkCs.Dimension.X);
+			int cz = (int) Math.Floor(pos.Z / ChunkCs.Dimension.Z);
 
-			double bx = Math.Floor(pos.x) + 0.5;
-			double by = Math.Floor(pos.y) + 0.5;
-			double bz = Math.Floor(pos.z) + 0.5;
+			int bx = (int) (MathHelper.Modulo((float) Math.Floor(pos.X), ChunkCs.Dimension.X) + 0.5);
+			int by = (int) (MathHelper.Modulo((float) Math.Floor(pos.Y), ChunkCs.Dimension.Y) + 0.5);
+			int bz = (int) (MathHelper.Modulo((float) Math.Floor(pos.Z), ChunkCs.Dimension.Z) + 0.5);
 			
-			double px = Math.Floor(Translation.x) + 0.5;
-			double py = Math.Floor(Translation.y) + 0.5;
-			double pz = Math.Floor(Translation.z) + 0.5;
+			WorldScript.lines.DrawBlock((int) (cx * ChunkCs.Dimension.X + bx), @by, (int) (cz * ChunkCs.Dimension.Z + bz), delta);
 			
-			
-			//CubeLocation = new Vector3((float) (bx - px), (float) (by - py), (float) (bz - pz));
 
 		}
 		
@@ -229,14 +234,14 @@ namespace MinecraftClone.Player_CS
 			{
 				if (@event is InputEventMouseMotion mouseEvent)
 				{
-					RotateY(Mathf.Deg2Rad(-(mouseEvent.Relative.x * MouseSensitivity)));
-					Camdir.x = RotationDegrees.y;
+					RotateY(MathHelper.DegreesToRadians(-(mouseEvent.Relative.x * MouseSensitivity)));
+					Camdir.X = RotationDegrees.y;
 					float xDelta = mouseEvent.Relative.y * MouseSensitivity;
 
 					if (_cameraXRotation + xDelta > -90 && _cameraXRotation + xDelta < 90)
 					{
-						_fpCam?.RotateX(Mathf.Deg2Rad(-xDelta));
-						Camdir.y = _fpCam.RotationDegrees.x;
+						_fpCam?.RotateX(MathHelper.DegreesToRadians(-xDelta));
+						Camdir.Y = _fpCam.RotationDegrees.x;
 						_cameraXRotation += xDelta;
 					}
 

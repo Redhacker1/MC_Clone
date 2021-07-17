@@ -8,7 +8,7 @@ namespace MinecraftClone.Debug_and_Logging
         public string Description; 
         public string HelpMessage;
         readonly bool _canEdit;
-        List<Action<string>> _changeNotifications;
+        readonly List<Action<string>> _changeNotifications;
         string _variable;
         
         Convar(string Name, string Desc, string Help, string Thing, bool ReadOnly)

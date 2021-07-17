@@ -23,16 +23,16 @@ namespace MinecraftClone.World_CS.Generation.Noise
         public enum CellularReturnType { CellValue, NoiseLookup, Distance, Distance2, Distance2Add, Distance2Sub, Distance2Mul, Distance2Div }
 
         long _mSeed;
-        float _mFrequency = (float)0.01;
+        double _mFrequency = 0.01;
         Interp _mInterp = Interp.Quintic;
         NoiseType _mNoiseType = NoiseType.Simplex;
 
         int _mOctaves = 3;
-        float _mLacunarity = (float)2.0;
-        float _mGain = (float)0.5;
+        double _mLacunarity = 2.0;
+        double _mGain = 0.5;
         FractalType _mFractalType = FractalType.Fbm;
 
-        float _mFractalBounding;
+        double _mFractalBounding;
 
         CellularDistanceFunction _mCellularDistanceFunction = CellularDistanceFunction.Euclidean;
         CellularReturnType _mCellularReturnType = CellularReturnType.CellValue;
@@ -46,6 +46,31 @@ namespace MinecraftClone.World_CS.Generation.Noise
         public NoiseUtil(long seed = 1337)
         {
             _mSeed = seed;
+            CalculateFractalBounding();
+        }
+        
+        /// <summary>
+        /// Copies the noiseutil class data over to another noiseutil class. 
+        /// </summary>
+        /// <param name="copynoise"></param>
+        public NoiseUtil(NoiseUtil copynoise)
+        {
+            _mSeed = copynoise._mSeed;
+            _mFrequency = copynoise._mFrequency;
+            _mGain = copynoise._mGain;
+            _mInterp = copynoise._mInterp;
+            _mLacunarity = copynoise._mLacunarity;
+            _mOctaves = copynoise._mOctaves;
+            _mCellularJitter = copynoise._mCellularJitter;
+            _mFractalBounding = copynoise._mFractalBounding;
+            _mFractalType = copynoise._mFractalType;
+            _mNoiseType = copynoise._mNoiseType;
+            _mCellularDistanceFunction = copynoise._mCellularDistanceFunction;
+            _mCellularDistanceIndex0 = copynoise._mCellularDistanceIndex0;
+            _mCellularDistanceIndex1 = copynoise._mCellularDistanceIndex1;
+            _mCellularReturnType = copynoise._mCellularReturnType;
+            _mGradientPerturbAmp = copynoise._mGradientPerturbAmp;
+            _mCellularNoiseUtilLookup = copynoise._mCellularNoiseUtilLookup;
             CalculateFractalBounding();
         }
 
@@ -71,9 +96,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
         /// Default: 0.01
         /// </summary>
         /// <param name="frequency"></param>
-        public void SetFrequency(float frequency) { _mFrequency = frequency; }
+        public void SetFrequency(double frequency) { _mFrequency = frequency; }
 
-        public float GetFrequency() { return _mFrequency; }
+        public double GetFrequency() { return _mFrequency; }
         
         /// <summary>
         /// Changes the interpolation method used to smooth between noise values
@@ -111,13 +136,13 @@ namespace MinecraftClone.World_CS.Generation.Noise
         /// <param name="lacunarity"></param>
         public void SetFractalLacunarity(float lacunarity) { _mLacunarity = lacunarity; }
 
-        public float GetFractalLacunarity() { return _mLacunarity; }
+        public double GetFractalLacunarity() { return _mLacunarity; }
 
         // Sets octave gain for all fractal noise types
         // Default: 0.5
         public void SetFractalGain(float gain) { _mGain = gain; CalculateFractalBounding(); }
 
-        public float GetFractalGain() { return _mGain; }
+        public double GetFractalGain() { return _mGain; }
 
         // Sets method for combining octaves in all fractal noise types
         // Default: FBM
@@ -160,9 +185,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         struct Float2
         {
-            public readonly float X, Y;
+            public readonly double X, Y;
 
-            public Float2(float x, float y)
+            public Float2(double x, double y)
             {
                 X = x;
                 Y = y;
@@ -171,9 +196,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         struct Float3
         {
-            public readonly float X, Y, Z;
+            public readonly double X, Y, Z;
 
-            public Float3(float x, float y, float z)
+            public Float3(double x, double y, double z)
             {
                 X = x;
                 Y = y;
@@ -265,26 +290,26 @@ namespace MinecraftClone.World_CS.Generation.Noise
         new Float3(-0.7870349638f, 0.03447489231f, 0.6159443543f), new Float3(-0.2015596421f, 0.6859872284f, 0.6991389226f), new Float3(-0.08581082512f, -0.10920836f, -0.9903080513f), new Float3(0.5532693395f, 0.7325250401f, -0.396610771f), new Float3(-0.1842489331f, -0.9777375055f, -0.1004076743f), new Float3(0.0775473789f, -0.9111505856f, 0.4047110257f), new Float3(0.1399838409f, 0.7601631212f, -0.6344734459f), new Float3(0.4484419361f, -0.845289248f, 0.2904925424f),
     };
         
-        static int FastFloor(float f) { return f >= 0 ? (int)f : (int)f - 1; }
+        static int FastFloor(double f) { return f >= 0 ? (int)f : (int)f - 1; }
         
-        static int FastRound(float f) { return f >= 0 ? (int)(f + (float)0.5) : (int)(f - (float)0.5); }
+        static int FastRound(double f) { return f >= 0 ? (int)(f + (float)0.5) : (int)(f - (float)0.5); }
         
-        static float Lerp(float a, float b, float t) { return a + t * (b - a); }
+        static double Lerp(double a, double b, double t) { return a + t * (b - a); }
 
-        static float InterpHermiteFunc(float t) { return t * t * (3 - 2 * t); }
+        static double InterpHermiteFunc(double t) { return t * t * (3 - 2 * t); }
         
-        static float InterpQuinticFunc(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+        static double InterpQuinticFunc(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
 
-        static float CubicLerp(float a, float b, float c, float d, float t)
+        static double CubicLerp(double a, double b, double c, double d, double t)
         {
-            float p = d - c - (a - b);
+            double p = d - c - (a - b);
             return t * t * t * p + t * t * (a - b - p) + t * (c - a) + b;
         }
 
         void CalculateFractalBounding()
         {
-            float amp = _mGain;
-            float ampFractal = 1;
+            double amp = _mGain;
+            double ampFractal = 1;
             for (int i = 1; i < _mOctaves; i++)
             {
                 ampFractal += amp;
@@ -339,26 +364,26 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return hash;
         }
         
-        static float ValCoord2D(long seed, int x, int y)
+        static double ValCoord2D(long seed, int x, int y)
         {
             long n = seed;
             n ^= XPrime * x;
             n ^= YPrime * y;
 
-            return n * n * n * 60493 / (float)2147483648.0;
+            return n * n * n * 60493 / 2147483648.0;
         }
         
-        static float ValCoord3D(long seed, int x, int y, int z)
+        static double ValCoord3D(long seed, int x, int y, int z)
         {
             long n = seed;
             n ^= XPrime * x;
             n ^= YPrime * y;
             n ^= ZPrime * z;
 
-            return n * n * n * 60493 / (float)2147483648.0;
+            return n * n * n * 60493 / 2147483648.0;
         }
         
-        static float ValCoord4D(long seed, int x, int y, int z, int w)
+        static double ValCoord4D(long seed, int x, int y, int z, int w)
         {
             long n = seed;
             n ^= XPrime * x;
@@ -366,10 +391,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
             n ^= ZPrime * z;
             n ^= WPrime * w;
 
-            return n * n * n * 60493 / (float)2147483648.0;
+            return n * n * n * 60493 / 2147483648.0;
         }
         
-        static float GradCoord2D(long seed, int x, int y, float xd, float yd)
+        static double GradCoord2D(long seed, int x, int y, double xd, double yd)
         {
             long hash = seed;
             hash ^= XPrime * x;
@@ -380,10 +405,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
             Float2 g = Grad2D[hash & 7];
 
-            return xd * g.X + yd * g.Y;
+            return (xd * g.X + yd * g.Y);
         }
         
-        static float GradCoord3D(long seed, int x, int y, int z, float xd, float yd, float zd)
+        static double GradCoord3D(long seed, int x, int y, int z, double xd, double yd, double zd)
         {
             long hash = seed;
             hash ^= XPrime * x;
@@ -395,10 +420,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
             Float3 g = Grad3D[hash & 15];
 
-            return xd * g.X + yd * g.Y + zd * g.Z;
+            return (xd * g.X + yd * g.Y + zd * g.Z);
         }
         
-        static float GradCoord4D(long seed, int x, int y, int z, int w, float xd, float yd, float zd, float wd)
+        static double GradCoord4D(long seed, int x, int y, int z, int w, double xd, double yd, double zd, double wd)
         {
             long hash = seed;
             hash ^= XPrime * x;
@@ -410,26 +435,31 @@ namespace MinecraftClone.World_CS.Generation.Noise
             hash = (hash >> 13) ^ hash;
 
             hash &= 31;
-            float a = yd, b = zd, c = wd;            // X,Y,Z
+            double a = yd, b = zd, c = wd;            // X,Y,Z
             switch (hash >> 3)
             {          // OR, DEPENDING ON HIGH ORDER 2 BITS:
                 case 1: a = wd; b = xd; c = yd; break;     // W,X,Y
                 case 2: a = zd; b = wd; c = xd; break;     // Z,W,X
                 case 3: a = yd; b = zd; c = wd; break;     // Y,Z,W
             }
-            return ((hash & 4) == 0 ? -a : a) + ((hash & 2) == 0 ? -b : b) + ((hash & 1) == 0 ? -c : c);
+            return (((hash & 4) == 0 ? -a : a) + ((hash & 2) == 0 ? -b : b) + ((hash & 1) == 0 ? -c : c));
         }
+
 
         public float GetNoise(float x, float y, float z)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
-            z *= _mFrequency;
+            return (float)GetNoise(x, y, (double)z);
+        }
+        double GetNoise(double x, double y, double z)
+        {
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;;
+            z *= (float)_mFrequency;;
 
             switch (_mNoiseType)
             {
                 case NoiseType.Value:
-                    return SingleValue(_mSeed, x, y, z);
+                    return (float) SingleValue(_mSeed, x, y, z);
 
                 case NoiseType.ValueFractal:
                     switch (_mFractalType)
@@ -497,7 +527,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
                     return GetWhiteNoise(x, y, z);
 
                 case NoiseType.Cubic:
-                    return SingleCubic(_mSeed, x, y, z);
+                    return (float) SingleCubic(_mSeed, x, y, z);
 
                 case NoiseType.CubicFractal:
                     switch (_mFractalType)
@@ -521,25 +551,30 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetNoise(float x, float y)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
+            return (float)GetNoise(x, (double)y);
+        }
+
+        double GetNoise(double x, double y)
+        {
+            x *= _mFrequency;;
+            y *= _mFrequency;;
 
             switch (_mNoiseType)
             {
                 case NoiseType.Value:
-                    return SingleValue(_mSeed, x, y);
+                    return (float) SingleValue(_mSeed, x, y);
 
                 case NoiseType.ValueFractal:
                     switch (_mFractalType)
                     {
                         case FractalType.Fbm:
-                            return SingleValueFractalFbm(x, y);
+                            return (float) SingleValueFractalFbm(x, y);
 
                         case FractalType.Billow:
-                            return SingleValueFractalBillow(x, y);
+                            return (float) SingleValueFractalBillow(x, y);
 
                         case FractalType.RigidMulti:
-                            return SingleValueFractalRigidMulti(x, y);
+                            return (float) SingleValueFractalRigidMulti(x, y);
 
                         default:
                             return 0;
@@ -586,7 +621,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         case CellularReturnType.CellValue:
                         case CellularReturnType.NoiseLookup:
                         case CellularReturnType.Distance:
-                            return SingleCellular(x, y);
+                            return (float) SingleCellular(x, y);
 
                         default:
                             return SingleCellular2Edge(x, y);
@@ -618,7 +653,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
         }
 
         // White Noise
-        int FloatCast2Int(float f)
+        int FloatCast2Int(double f)
         {
             long i = BitConverter.DoubleToInt64Bits(f);
 
@@ -632,69 +667,69 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int zi = FloatCast2Int(z);
             int wi = FloatCast2Int(w);
 
-            return ValCoord4D(_mSeed, xi, yi, zi, wi);
+            return (float) ValCoord4D(_mSeed, xi, yi, zi, wi);
         }
 
-        public float GetWhiteNoise(float x, float y, float z)
+        public float GetWhiteNoise(double x, double y, double z)
         {
             int xi = FloatCast2Int(x);
             int yi = FloatCast2Int(y);
             int zi = FloatCast2Int(z);
 
-            return ValCoord3D(_mSeed, xi, yi, zi);
+            return (float) ValCoord3D(_mSeed, xi, yi, zi);
         }
 
-        public float GetWhiteNoise(float x, float y)
+        public float GetWhiteNoise(double x, double y)
         {
             int xi = FloatCast2Int(x);
             int yi = FloatCast2Int(y);
 
-            return ValCoord2D(_mSeed, xi, yi);
+            return (float) ValCoord2D(_mSeed, xi, yi);
         }
 
         public float GetWhiteNoiseInt(int x, int y, int z, int w)
         {
-            return ValCoord4D(_mSeed, x, y, z, w);
+            return (float) ValCoord4D(_mSeed, x, y, z, w);
         }
 
         public float GetWhiteNoiseInt(int x, int y, int z)
         {
-            return ValCoord3D(_mSeed, x, y, z);
+            return (float) ValCoord3D(_mSeed, x, y, z);
         }
 
         public float GetWhiteNoiseInt(int x, int y)
         {
-            return ValCoord2D(_mSeed, x, y);
+            return (float) ValCoord2D(_mSeed, x, y);
         }
 
         // Value Noise
         public float GetValueFractal(float x, float y, float z)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
-            z *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
+            z *= (float)_mFrequency;
 
             switch (_mFractalType)
             {
                 case FractalType.Fbm:
-                    return SingleValueFractalFbm(x, y, z);
+                    return (float) SingleValueFractalFbm(x, y, z);
 
                 case FractalType.Billow:
-                    return SingleValueFractalBillow(x, y, z);
+                    return (float) SingleValueFractalBillow(x, y, z);
 
                 case FractalType.RigidMulti:
-                    return SingleValueFractalRigidMulti(x, y, z);
+                    return (float) SingleValueFractalRigidMulti(x, y, z);
 
                 default:
                     return 0;
             }
         }
 
-        float SingleValueFractalFbm(float x, float y, float z)
+        double SingleValueFractalFbm(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = SingleValue(seed, x, y, z);
-            float amp = 1;
+            double sum = SingleValue(seed, x, y, z);
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -706,14 +741,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum += SingleValue(++seed, x, y, z) * amp;
             }
 
-            return sum * _mFractalBounding;
+            return (sum * _mFractalBounding);
         }
 
-        float SingleValueFractalBillow(float x, float y, float z)
+        double SingleValueFractalBillow(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SingleValue(seed, x, y, z)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SingleValue(seed, x, y, z)) * 2 - 1;
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -728,11 +763,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleValueFractalRigidMulti(float x, float y, float z)
+        double SingleValueFractalRigidMulti(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SingleValue(seed, x, y, z));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SingleValue(seed, x, y, z));
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -744,15 +779,15 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum -= (1 - Math.Abs(SingleValue(++seed, x, y, z))) * amp;
             }
 
-            return sum;
+            return (float)sum;
         }
 
         public float GetValue(float x, float y, float z)
         {
-            return SingleValue(_mSeed, x * _mFrequency, y * _mFrequency, z * _mFrequency);
+            return (float) SingleValue(_mSeed, x * (float)_mFrequency, y * (float)_mFrequency, z * (float)_mFrequency);
         }
 
-        float SingleValue(long seed, float x, float y, float z)
+        double SingleValue(long seed, double x, double y, double z)
         {
             int x0 = FastFloor(x);
             int y0 = FastFloor(y);
@@ -761,7 +796,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int y1 = y0 + 1;
             int z1 = z0 + 1;
 
-            float xs, ys, zs;
+            double xs, ys, zs;
             switch (_mInterp)
             {
                 default:
@@ -784,43 +819,43 @@ namespace MinecraftClone.World_CS.Generation.Noise
                     break;
             }
 
-            float xf00 = Lerp(ValCoord3D(seed, x0, y0, z0), ValCoord3D(seed, x1, y0, z0), xs);
-            float xf10 = Lerp(ValCoord3D(seed, x0, y1, z0), ValCoord3D(seed, x1, y1, z0), xs);
-            float xf01 = Lerp(ValCoord3D(seed, x0, y0, z1), ValCoord3D(seed, x1, y0, z1), xs);
-            float xf11 = Lerp(ValCoord3D(seed, x0, y1, z1), ValCoord3D(seed, x1, y1, z1), xs);
+            double xf00 = Lerp(ValCoord3D(seed, x0, y0, z0), ValCoord3D(seed, x1, y0, z0), xs);
+            double xf10 = Lerp(ValCoord3D(seed, x0, y1, z0), ValCoord3D(seed, x1, y1, z0), xs);
+            double xf01 = Lerp(ValCoord3D(seed, x0, y0, z1), ValCoord3D(seed, x1, y0, z1), xs);
+            double xf11 = Lerp(ValCoord3D(seed, x0, y1, z1), ValCoord3D(seed, x1, y1, z1), xs);
 
-            float yf0 = Lerp(xf00, xf10, ys);
-            float yf1 = Lerp(xf01, xf11, ys);
+            double yf0 = Lerp(xf00, xf10, ys);
+            double yf1 = Lerp(xf01, xf11, ys);
 
             return Lerp(yf0, yf1, zs);
         }
 
         public float GetValueFractal(float x, float y)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
 
             switch (_mFractalType)
             {
                 case FractalType.Fbm:
-                    return SingleValueFractalFbm(x, y);
+                    return (float) SingleValueFractalFbm(x, y);
 
                 case FractalType.Billow:
-                    return SingleValueFractalBillow(x, y);
+                    return (float) SingleValueFractalBillow(x, y);
 
                 case FractalType.RigidMulti:
-                    return SingleValueFractalRigidMulti(x, y);
+                    return (float) SingleValueFractalRigidMulti(x, y);
 
                 default:
                     return 0;
             }
         }
 
-        float SingleValueFractalFbm(float x, float y)
+        double SingleValueFractalFbm(double x, double y)
         {
             long seed = _mSeed;
-            float sum = SingleValue(seed, x, y);
-            float amp = 1;
+            double sum = SingleValue(seed, x, y);
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -834,11 +869,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleValueFractalBillow(float x, float y)
+        double SingleValueFractalBillow(double x, double y)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SingleValue(seed, x, y)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SingleValue(seed, x, y)) * 2 - 1;
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -851,11 +886,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleValueFractalRigidMulti(float x, float y)
+        double SingleValueFractalRigidMulti(double x, double y)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SingleValue(seed, x, y));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SingleValue(seed, x, y));
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -871,17 +906,18 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetValue(float x, float y)
         {
-            return SingleValue(_mSeed, x * _mFrequency, y * _mFrequency);
+            return (float) SingleValue(_mSeed, x * (float)_mFrequency, y * (float)_mFrequency);
         }
 
-        float SingleValue(long seed, float x, float y)
+        double SingleValue(long seed, double x, double y)
         {
             int x0 = FastFloor(x);
             int y0 = FastFloor(y);
             int x1 = x0 + 1;
             int y1 = y0 + 1;
 
-            float xs, ys;
+            double xs;
+            double ys;
             switch (_mInterp)
             {
                 default:
@@ -901,8 +937,8 @@ namespace MinecraftClone.World_CS.Generation.Noise
                     break;
             }
 
-            float xf0 = Lerp(ValCoord2D(seed, x0, y0), ValCoord2D(seed, x1, y0), xs);
-            float xf1 = Lerp(ValCoord2D(seed, x0, y1), ValCoord2D(seed, x1, y1), xs);
+            double xf0 = Lerp(ValCoord2D(seed, x0, y0), ValCoord2D(seed, x1, y0), xs);
+            double xf1 = Lerp(ValCoord2D(seed, x0, y1), ValCoord2D(seed, x1, y1), xs);
 
             return Lerp(xf0, xf1, ys);
         }
@@ -910,17 +946,17 @@ namespace MinecraftClone.World_CS.Generation.Noise
         // Gradient Noise
         public float GetPerlinFractal(float x, float y, float z)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
-            z *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
+            z *= (float)_mFrequency;
 
             switch (_mFractalType)
             {
                 case FractalType.Fbm:
-                    return SinglePerlinFractalFbm(x, y, z);
+                    return (float) SinglePerlinFractalFbm(x, y, z);
 
                 case FractalType.Billow:
-                    return SinglePerlinFractalBillow(x, y, z);
+                    return (float) SinglePerlinFractalBillow(x, y, z);
 
                 case FractalType.RigidMulti:
                     return SinglePerlinFractalRigidMulti(x, y, z);
@@ -930,11 +966,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        float SinglePerlinFractalFbm(float x, float y, float z)
+        double SinglePerlinFractalFbm(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = SinglePerlin(seed, x, y, z);
-            float amp = 1;
+            double sum = SinglePerlin(seed, x, y, z);
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -946,14 +982,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum += SinglePerlin(++seed, x, y, z) * amp;
             }
 
-            return sum * _mFractalBounding;
+            return (float) (sum * _mFractalBounding);
         }
 
-        float SinglePerlinFractalBillow(float x, float y, float z)
+        double SinglePerlinFractalBillow(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SinglePerlin(seed, x, y, z)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SinglePerlin(seed, x, y, z)) * 2 - 1;
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -968,11 +1004,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SinglePerlinFractalRigidMulti(float x, float y, float z)
+        float SinglePerlinFractalRigidMulti(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SinglePerlin(seed, x, y, z));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SinglePerlin(seed, x, y, z));
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -984,15 +1020,15 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum -= (1 - Math.Abs(SinglePerlin(++seed, x, y, z))) * amp;
             }
 
-            return sum;
+            return (float) sum;
         }
 
         public float GetPerlin(float x, float y, float z)
         {
-            return SinglePerlin(_mSeed, x * _mFrequency, y * _mFrequency, z * _mFrequency);
+            return SinglePerlin(_mSeed, x * (float)_mFrequency, y * (float)_mFrequency, z * (float)_mFrequency);
         }
 
-        float SinglePerlin(long seed, float x, float y, float z)
+        float SinglePerlin(long seed, double x, double y, double z)
         {
             int x0 = FastFloor(x);
             int y0 = FastFloor(y);
@@ -1001,7 +1037,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int y1 = y0 + 1;
             int z1 = z0 + 1;
 
-            float xs, ys, zs;
+            double xs;
+            double ys;
+            double zs;
             switch (_mInterp)
             {
                 default:
@@ -1024,50 +1062,50 @@ namespace MinecraftClone.World_CS.Generation.Noise
                     break;
             }
 
-            float xd0 = x - x0;
-            float yd0 = y - y0;
-            float zd0 = z - z0;
-            float xd1 = xd0 - 1;
-            float yd1 = yd0 - 1;
-            float zd1 = zd0 - 1;
+            double xd0 = x - x0;
+            double yd0 = y - y0;
+            double zd0 = z - z0;
+            double xd1 = xd0 - 1;
+            double yd1 = yd0 - 1;
+            double zd1 = zd0 - 1;
 
-            float xf00 = Lerp(GradCoord3D(seed, x0, y0, z0, xd0, yd0, zd0), GradCoord3D(seed, x1, y0, z0, xd1, yd0, zd0), xs);
-            float xf10 = Lerp(GradCoord3D(seed, x0, y1, z0, xd0, yd1, zd0), GradCoord3D(seed, x1, y1, z0, xd1, yd1, zd0), xs);
-            float xf01 = Lerp(GradCoord3D(seed, x0, y0, z1, xd0, yd0, zd1), GradCoord3D(seed, x1, y0, z1, xd1, yd0, zd1), xs);
-            float xf11 = Lerp(GradCoord3D(seed, x0, y1, z1, xd0, yd1, zd1), GradCoord3D(seed, x1, y1, z1, xd1, yd1, zd1), xs);
+            double xf00 = Lerp(GradCoord3D(seed, x0, y0, z0, xd0, yd0, zd0), GradCoord3D(seed, x1, y0, z0, xd1, yd0, zd0), xs);
+            double xf10 = Lerp(GradCoord3D(seed, x0, y1, z0, xd0, yd1, zd0), GradCoord3D(seed, x1, y1, z0, xd1, yd1, zd0), xs);
+            double xf01 = Lerp(GradCoord3D(seed, x0, y0, z1, xd0, yd0, zd1), GradCoord3D(seed, x1, y0, z1, xd1, yd0, zd1), xs);
+            double xf11 = Lerp(GradCoord3D(seed, x0, y1, z1, xd0, yd1, zd1), GradCoord3D(seed, x1, y1, z1, xd1, yd1, zd1), xs);
 
-            float yf0 = Lerp(xf00, xf10, ys);
-            float yf1 = Lerp(xf01, xf11, ys);
+            double yf0 = Lerp(xf00, xf10, ys);
+            double yf1 = Lerp(xf01, xf11, ys);
 
-            return Lerp(yf0, yf1, zs);
+            return (float) Lerp(yf0, yf1, zs);
         }
 
         public float GetPerlinFractal(float x, float y)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
 
             switch (_mFractalType)
             {
                 case FractalType.Fbm:
-                    return SinglePerlinFractalFbm(x, y);
+                    return (float) SinglePerlinFractalFbm(x, y);
 
                 case FractalType.Billow:
-                    return SinglePerlinFractalBillow(x, y);
+                    return (float) SinglePerlinFractalBillow(x, y);
 
                 case FractalType.RigidMulti:
-                    return SinglePerlinFractalRigidMulti(x, y);
+                    return (float) SinglePerlinFractalRigidMulti(x, y);
 
                 default:
                     return 0;
             }
         }
 
-        float SinglePerlinFractalFbm(float x, float y)
+        double SinglePerlinFractalFbm(double x, double y)
         {
             long seed = _mSeed;
-            float sum = SinglePerlin(seed, x, y);
-            float amp = 1;
+            double sum = SinglePerlin(seed, x, y);
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1081,11 +1119,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SinglePerlinFractalBillow(float x, float y)
+        double SinglePerlinFractalBillow(double x, double y)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SinglePerlin(seed, x, y)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SinglePerlin(seed, x, y)) * 2 - 1;
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1099,11 +1137,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SinglePerlinFractalRigidMulti(float x, float y)
+        double SinglePerlinFractalRigidMulti(double x, double y)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SinglePerlin(seed, x, y));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SinglePerlin(seed, x, y));
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1119,17 +1157,18 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetPerlin(float x, float y)
         {
-            return SinglePerlin(_mSeed, x * _mFrequency, y * _mFrequency);
+            return (float) SinglePerlin(_mSeed, x * (float)_mFrequency, y * (float)_mFrequency);
         }
 
-        float SinglePerlin(long seed, float x, float y)
+        double SinglePerlin(long seed, double x, double y)
         {
             int x0 = FastFloor(x);
             int y0 = FastFloor(y);
             int x1 = x0 + 1;
             int y1 = y0 + 1;
 
-            float xs, ys;
+            double xs;
+            double ys;
             switch (_mInterp)
             {
                 default:
@@ -1149,19 +1188,24 @@ namespace MinecraftClone.World_CS.Generation.Noise
                     break;
             }
 
-            float xd0 = x - x0;
-            float yd0 = y - y0;
-            float xd1 = xd0 - 1;
-            float yd1 = yd0 - 1;
+            double xd0 = x - x0;
+            double yd0 = y - y0;
+            double xd1 = xd0 - 1;
+            double yd1 = yd0 - 1;
 
-            float xf0 = Lerp(GradCoord2D(seed, x0, y0, xd0, yd0), GradCoord2D(seed, x1, y0, xd1, yd0), xs);
-            float xf1 = Lerp(GradCoord2D(seed, x0, y1, xd0, yd1), GradCoord2D(seed, x1, y1, xd1, yd1), xs);
+            double xf0 = Lerp(GradCoord2D(seed, x0, y0, xd0, yd0), GradCoord2D(seed, x1, y0, xd1, yd0), xs);
+            double xf1 = Lerp(GradCoord2D(seed, x0, y1, xd0, yd1), GradCoord2D(seed, x1, y1, xd1, yd1), xs);
 
             return Lerp(xf0, xf1, ys);
         }
 
         // Simplex Noise
         public float GetSimplexFractal(float x, float y, float z)
+        {
+            return (float)GetSimplexFractal(x,y,(double)z);
+        }
+
+        double GetSimplexFractal(double x, double y, double z)
         {
             x *= _mFrequency;
             y *= _mFrequency;
@@ -1183,11 +1227,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        float SingleSimplexFractalFbm(float x, float y, float z)
+        float SingleSimplexFractalFbm(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = SingleSimplex(seed, x, y, z);
-            float amp = 1;
+            double sum = SingleSimplex(seed, x, y, z);
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1199,14 +1243,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum += SingleSimplex(++seed, x, y, z) * amp;
             }
 
-            return sum * _mFractalBounding;
+            return (float) (sum * _mFractalBounding);
         }
 
-        float SingleSimplexFractalBillow(float x, float y, float z)
+        float SingleSimplexFractalBillow(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SingleSimplex(seed, x, y, z)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SingleSimplex(seed, x, y, z)) * 2 - 1;
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1218,14 +1262,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum += (Math.Abs(SingleSimplex(++seed, x, y, z)) * 2 - 1) * amp;
             }
 
-            return sum * _mFractalBounding;
+            return (float) (sum * _mFractalBounding);
         }
 
-        float SingleSimplexFractalRigidMulti(float x, float y, float z)
+        float SingleSimplexFractalRigidMulti(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SingleSimplex(seed, x, y, z));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SingleSimplex(seed, x, y, z));
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1237,29 +1281,29 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum -= (1 - Math.Abs(SingleSimplex(++seed, x, y, z))) * amp;
             }
 
-            return sum;
+            return (float) sum;
         }
 
         public float GetSimplex(float x, float y, float z)
         {
-            return SingleSimplex(_mSeed, x * _mFrequency, y * _mFrequency, z * _mFrequency);
+            return (float) SingleSimplex(_mSeed, x * (float)_mFrequency, y * (float)_mFrequency, z * (float)_mFrequency);
         }
 
         const float F3 = (float)(1.0 / 3.0);
         const float G3 = (float)(1.0 / 6.0);
         const float G33 = G3 * 3 - 1;
 
-        static float SingleSimplex(long seed, float x, float y, float z)
+        static double SingleSimplex(long seed, double x, double y, double z)
         {
-            float t = (x + y + z) * F3;
+            double t = (x + y + z) * F3;
             int i = FastFloor(x + t);
             int j = FastFloor(y + t);
             int k = FastFloor(z + t);
 
             t = (i + j + k) * G3;
-            float x0 = x - (i - t);
-            float y0 = y - (j - t);
-            float z0 = z - (k - t);
+            double x0 = x - (i - t);
+            double y0 = y - (j - t);
+            double z0 = z - (k - t);
 
             int i1, j1, k1;
             int i2, j2, k2;
@@ -1295,19 +1339,19 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 }
             }
 
-            float x1 = x0 - i1 + G3;
-            float y1 = y0 - j1 + G3;
-            float z1 = z0 - k1 + G3;
-            float x2 = x0 - i2 + F3;
-            float y2 = y0 - j2 + F3;
-            float z2 = z0 - k2 + F3;
-            float x3 = x0 + G33;
-            float y3 = y0 + G33;
-            float z3 = z0 + G33;
+            double x1 = x0 - i1 + G3;
+            double y1 = y0 - j1 + G3;
+            double z1 = z0 - k1 + G3;
+            double x2 = x0 - i2 + F3;
+            double y2 = y0 - j2 + F3;
+            double z2 = z0 - k2 + F3;
+            double x3 = x0 + G33;
+            double y3 = y0 + G33;
+            double z3 = z0 + G33;
 
-            float n0, n1, n2, n3;
+            double n0, n1, n2, n3;
 
-            t = (float)0.6 - x0 * x0 - y0 * y0 - z0 * z0;
+            t = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
             if (t < 0) n0 = 0;
             else
             {
@@ -1315,7 +1359,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 n0 = t * t * GradCoord3D(seed, i, j, k, x0, y0, z0);
             }
 
-            t = (float)0.6 - x1 * x1 - y1 * y1 - z1 * z1;
+            t = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
             if (t < 0) n1 = 0;
             else
             {
@@ -1323,7 +1367,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 n1 = t * t * GradCoord3D(seed, i + i1, j + j1, k + k1, x1, y1, z1);
             }
 
-            t = (float)0.6 - x2 * x2 - y2 * y2 - z2 * z2;
+            t = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
             if (t < 0) n2 = 0;
             else
             {
@@ -1331,7 +1375,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 n2 = t * t * GradCoord3D(seed, i + i2, j + j2, k + k2, x2, y2, z2);
             }
 
-            t = (float)0.6 - x3 * x3 - y3 * y3 - z3 * z3;
+            t = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
             if (t < 0) n3 = 0;
             else
             {
@@ -1343,6 +1387,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
         }
 
         public float GetSimplexFractal(float x, float y)
+        {
+            return (float)GetSimplexFractal(x, (double) y);
+        }
+        
+        double GetSimplexFractal(double x, double y)
         {
             x *= _mFrequency;
             y *= _mFrequency;
@@ -1363,11 +1412,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        float SingleSimplexFractalFbm(float x, float y)
+        double SingleSimplexFractalFbm(double x, double y)
         {
             long seed = _mSeed;
-            float sum = SingleSimplex(seed, x, y);
-            float amp = 1;
+            double sum = SingleSimplex(seed, x, y);
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1381,11 +1430,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleSimplexFractalBillow(float x, float y)
+        double SingleSimplexFractalBillow(double x, double y)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SingleSimplex(seed, x, y)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SingleSimplex(seed, x, y)) * 2 - 1;
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1399,11 +1448,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleSimplexFractalRigidMulti(float x, float y)
+        double SingleSimplexFractalRigidMulti(double x, double y)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SingleSimplex(seed, x, y));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SingleSimplex(seed, x, y));
+            double amp = 1;
 
             for (int i = 1; i < _mOctaves; i++)
             {
@@ -1419,24 +1468,24 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetSimplex(float x, float y)
         {
-            return SingleSimplex(_mSeed, x * _mFrequency, y * _mFrequency);
+            return (float) SingleSimplex(_mSeed, x *(float) _mFrequency, y * (float)_mFrequency);
         }
 
         const float F2 = (float)(1.0 / 2.0);
         const float G2 = (float)(1.0 / 4.0);
 
-        static float SingleSimplex(long seed, float x, float y)
+        static double SingleSimplex(long seed, double x, double y)
         {
-            float t = (x + y) * F2;
+            double t = (x + y) * F2;
             int i = FastFloor(x + t);
             int j = FastFloor(y + t);
 
             t = (i + j) * G2;
-            float X0 = i - t;
-            float Y0 = j - t;
+            double X0 = i - t;
+            double Y0 = j - t;
 
-            float x0 = x - X0;
-            float y0 = y - Y0;
+            double x0 = x - X0;
+            double y0 = y - Y0;
 
             int i1, j1;
             if (x0 > y0)
@@ -1448,14 +1497,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 i1 = 0; j1 = 1;
             }
 
-            float x1 = x0 - i1 + G2;
-            float y1 = y0 - j1 + G2;
-            float x2 = x0 - 1 + F2;
-            float y2 = y0 - 1 + F2;
+            double x1 = x0 - i1 + G2;
+            double y1 = y0 - j1 + G2;
+            double x2 = x0 - 1 + F2;
+            double y2 = y0 - 1 + F2;
 
-            float n0, n1, n2;
+            double n0, n1, n2;
 
-            t = (float)0.5 - x0 * x0 - y0 * y0;
+            t = 0.5 - x0 * x0 - y0 * y0;
             if (t < 0) n0 = 0;
             else
             {
@@ -1463,7 +1512,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 n0 = t * t * GradCoord2D(seed, i, j, x0, y0);
             }
 
-            t = (float)0.5 - x1 * x1 - y1 * y1;
+            t = 0.5 - x1 * x1 - y1 * y1;
             if (t < 0) n1 = 0;
             else
             {
@@ -1484,7 +1533,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetSimplex(float x, float y, float z, float w)
         {
-            return SingleSimplex(_mSeed, x * _mFrequency, y * _mFrequency, z * _mFrequency, w * _mFrequency);
+            return (float) SingleSimplex(_mSeed, x * (float)_mFrequency, y * (float)_mFrequency, z * (float)_mFrequency, w * (float)_mFrequency);
         }
 
         static readonly byte[] Simplex4D =
@@ -1502,23 +1551,23 @@ namespace MinecraftClone.World_CS.Generation.Noise
         const float F4 = (float)((2.23606797 - 1.0) / 4.0);
         const float G4 = (float)((5.0 - 2.23606797) / 20.0);
 
-        float SingleSimplex(long seed, float x, float y, float z, float w)
+        double SingleSimplex(long seed, float x, float y, float z, float w)
         {
-            float n0, n1, n2, n3, n4;
-            float t = (x + y + z + w) * F4;
+            double n0, n1, n2, n3, n4;
+            double t = (x + y + z + w) * F4;
             int i = FastFloor(x + t);
             int j = FastFloor(y + t);
             int k = FastFloor(z + t);
             int l = FastFloor(w + t);
             t = (i + j + k + l) * G4;
-            float X0 = i - t;
-            float Y0 = j - t;
-            float Z0 = k - t;
-            float W0 = l - t;
-            float x0 = x - X0;
-            float y0 = y - Y0;
-            float z0 = z - Z0;
-            float w0 = w - W0;
+            double X0 = i - t;
+            double Y0 = j - t;
+            double Z0 = k - t;
+            double W0 = l - t;
+            double x0 = x - X0;
+            double y0 = y - Y0;
+            double z0 = z - Z0;
+            double w0 = w - W0;
 
             int c = x0 > y0 ? 32 : 0;
             c += x0 > z0 ? 16 : 0;
@@ -1541,22 +1590,22 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int l2 = Simplex4D[c] >= 2 ? 1 : 0;
             int l3 = Simplex4D[c] >= 1 ? 1 : 0;
 
-            float x1 = x0 - i1 + G4;
-            float y1 = y0 - j1 + G4;
-            float z1 = z0 - k1 + G4;
-            float w1 = w0 - l1 + G4;
-            float x2 = x0 - i2 + 2 * G4;
-            float y2 = y0 - j2 + 2 * G4;
-            float z2 = z0 - k2 + 2 * G4;
-            float w2 = w0 - l2 + 2 * G4;
-            float x3 = x0 - i3 + 3 * G4;
-            float y3 = y0 - j3 + 3 * G4;
-            float z3 = z0 - k3 + 3 * G4;
-            float w3 = w0 - l3 + 3 * G4;
-            float x4 = x0 - 1 + 4 * G4;
-            float y4 = y0 - 1 + 4 * G4;
-            float z4 = z0 - 1 + 4 * G4;
-            float w4 = w0 - 1 + 4 * G4;
+            double x1 = x0 - i1 + G4;
+            double y1 = y0 - j1 + G4;
+            double z1 = z0 - k1 + G4;
+            double w1 = w0 - l1 + G4;
+            double x2 = x0 - i2 + 2 * G4;
+            double y2 = y0 - j2 + 2 * G4;
+            double z2 = z0 - k2 + 2 * G4;
+            double w2 = w0 - l2 + 2 * G4;
+            double x3 = x0 - i3 + 3 * G4;
+            double y3 = y0 - j3 + 3 * G4;
+            double z3 = z0 - k3 + 3 * G4;
+            double w3 = w0 - l3 + 3 * G4;
+            double x4 = x0 - 1 + 4 * G4;
+            double y4 = y0 - 1 + 4 * G4;
+            double z4 = z0 - 1 + 4 * G4;
+            double w4 = w0 - 1 + 4 * G4;
 
             t = (float)0.6 - x0 * x0 - y0 * y0 - z0 * z0 - w0 * w0;
             if (t < 0) n0 = 0;
@@ -1600,9 +1649,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
         // Cubic Noise
         public float GetCubicFractal(float x, float y, float z)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
-            z *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
+            z *=(float) _mFrequency;
 
             switch (_mFractalType)
             {
@@ -1620,11 +1669,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        float SingleCubicFractalFbm(float x, float y, float z)
+        float SingleCubicFractalFbm(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = SingleCubic(seed, x, y, z);
-            float amp = 1;
+            double sum = SingleCubic(seed, x, y, z);
+            double amp = 1;
             int i = 0;
 
             while (++i < _mOctaves)
@@ -1637,14 +1686,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum += SingleCubic(++seed, x, y, z) * amp;
             }
 
-            return sum * _mFractalBounding;
+            return (float) (sum * _mFractalBounding);
         }
 
-        float SingleCubicFractalBillow(float x, float y, float z)
+        float SingleCubicFractalBillow(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SingleCubic(seed, x, y, z)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SingleCubic(seed, x, y, z)) * 2 - 1;
+            double amp = 1;
             int i = 0;
 
             while (++i < _mOctaves)
@@ -1657,14 +1706,14 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum += (Math.Abs(SingleCubic(++seed, x, y, z)) * 2 - 1) * amp;
             }
 
-            return sum * _mFractalBounding;
+            return (float) (sum * _mFractalBounding);
         }
 
-        float SingleCubicFractalRigidMulti(float x, float y, float z)
+        float SingleCubicFractalRigidMulti(double x, double y, double z)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SingleCubic(seed, x, y, z));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SingleCubic(seed, x, y, z));
+            double amp = 1;
             int i = 0;
 
             while (++i < _mOctaves)
@@ -1677,17 +1726,17 @@ namespace MinecraftClone.World_CS.Generation.Noise
                 sum -= (1 - Math.Abs(SingleCubic(++seed, x, y, z))) * amp;
             }
 
-            return sum;
+            return (float)sum;
         }
 
         public float GetCubic(float x, float y, float z)
         {
-            return SingleCubic(_mSeed, x * _mFrequency, y * _mFrequency, z * _mFrequency);
+            return (float) SingleCubic(_mSeed, x * _mFrequency, y * _mFrequency, z * _mFrequency);
         }
 
         const float Cubic3DBounding = 1 / (float)(1.5 * 1.5 * 1.5);
 
-        float SingleCubic(long seed, float x, float y, float z)
+        double SingleCubic(long seed, double x, double y, double z)
         {
             int x1 = FastFloor(x);
             int y1 = FastFloor(y);
@@ -1703,9 +1752,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int y3 = y1 + 2;
             int z3 = z1 + 2;
 
-            float xs = x - x1;
-            float ys = y - y1;
-            float zs = z - z1;
+            double xs = x - x1;
+            double ys = y - y1;
+            double zs = z - z1;
 
             return CubicLerp(
                 CubicLerp(
@@ -1737,30 +1786,30 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetCubicFractal(float x, float y)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
 
             switch (_mFractalType)
             {
                 case FractalType.Fbm:
-                    return SingleCubicFractalFbm(x, y);
+                    return (float) SingleCubicFractalFbm(x, y);
 
                 case FractalType.Billow:
-                    return SingleCubicFractalBillow(x, y);
+                    return (float) SingleCubicFractalBillow(x, y);
 
                 case FractalType.RigidMulti:
-                    return SingleCubicFractalRigidMulti(x, y);
+                    return (float) SingleCubicFractalRigidMulti(x, y);
 
                 default:
                     return 0;
             }
         }
 
-        float SingleCubicFractalFbm(float x, float y)
+        double SingleCubicFractalFbm(double x, double y)
         {
             long seed = _mSeed;
-            float sum = SingleCubic(seed, x, y);
-            float amp = 1;
+            double sum = SingleCubic(seed, x, y);
+            double amp = 1;
             int i = 0;
 
             while (++i < _mOctaves)
@@ -1775,11 +1824,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleCubicFractalBillow(float x, float y)
+        double SingleCubicFractalBillow(double x, double y)
         {
             long seed = _mSeed;
-            float sum = Math.Abs(SingleCubic(seed, x, y)) * 2 - 1;
-            float amp = 1;
+            double sum = Math.Abs(SingleCubic(seed, x, y)) * 2 - 1;
+            double amp = 1;
             int i = 0;
 
             while (++i < _mOctaves)
@@ -1794,11 +1843,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             return sum * _mFractalBounding;
         }
 
-        float SingleCubicFractalRigidMulti(float x, float y)
+        double SingleCubicFractalRigidMulti(double x, double y)
         {
             long seed = _mSeed;
-            float sum = 1 - Math.Abs(SingleCubic(seed, x, y));
-            float amp = 1;
+            double sum = 1 - Math.Abs(SingleCubic(seed, x, y));
+            double amp = 1;
             int i = 0;
 
             while (++i < _mOctaves)
@@ -1815,15 +1864,15 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetCubic(float x, float y)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
 
-            return SingleCubic(0, x, y);
+            return (float) SingleCubic(0, x, y);
         }
 
         const float Cubic2DBounding = 1 / (float)(1.5 * 1.5);
 
-        float SingleCubic(long seed, float x, float y)
+        double SingleCubic(long seed, double x, double y)
         {
             int x1 = FastFloor(x);
             int y1 = FastFloor(y);
@@ -1835,47 +1884,47 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int x3 = x1 + 2;
             int y3 = y1 + 2;
 
-            float xs = x - x1;
-            float ys = y - y1;
+            double xs = x - x1;
+            double ys = y - y1;
 
-            return CubicLerp(
-                       CubicLerp(ValCoord2D(seed, x0, y0), ValCoord2D(seed, x1, y0), ValCoord2D(seed, x2, y0), ValCoord2D(seed, x3, y0),
-                           xs),
-                       CubicLerp(ValCoord2D(seed, x0, y1), ValCoord2D(seed, x1, y1), ValCoord2D(seed, x2, y1), ValCoord2D(seed, x3, y1),
-                           xs),
-                       CubicLerp(ValCoord2D(seed, x0, y2), ValCoord2D(seed, x1, y2), ValCoord2D(seed, x2, y2), ValCoord2D(seed, x3, y2),
-                           xs),
-                       CubicLerp(ValCoord2D(seed, x0, y3), ValCoord2D(seed, x1, y3), ValCoord2D(seed, x2, y3), ValCoord2D(seed, x3, y3),
-                           xs),
-                       ys) * Cubic2DBounding;
+            return (CubicLerp(
+                CubicLerp(ValCoord2D(seed, x0, y0), ValCoord2D(seed, x1, y0), ValCoord2D(seed, x2, y0), ValCoord2D(seed, x3, y0),
+                    xs),
+                CubicLerp(ValCoord2D(seed, x0, y1), ValCoord2D(seed, x1, y1), ValCoord2D(seed, x2, y1), ValCoord2D(seed, x3, y1),
+                    xs),
+                CubicLerp(ValCoord2D(seed, x0, y2), ValCoord2D(seed, x1, y2), ValCoord2D(seed, x2, y2), ValCoord2D(seed, x3, y2),
+                    xs),
+                CubicLerp(ValCoord2D(seed, x0, y3), ValCoord2D(seed, x1, y3), ValCoord2D(seed, x2, y3), ValCoord2D(seed, x3, y3),
+                    xs),
+                ys) * Cubic2DBounding);
         }
 
         // Cellular Noise
         public float GetCellular(float x, float y, float z)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
-            z *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float) _mFrequency;
+            z *= (float)_mFrequency;
 
             switch (_mCellularReturnType)
             {
                 case CellularReturnType.CellValue:
                 case CellularReturnType.NoiseLookup:
                 case CellularReturnType.Distance:
-                    return SingleCellular(x, y, z);
+                    return (float) SingleCellular(x, y, z);
 
                 default:
-                    return SingleCellular2Edge(x, y, z);
+                    return (float) SingleCellular2Edge(x, y, z);
             }
         }
 
-        float SingleCellular(float x, float y, float z)
+        double SingleCellular(double x, double y, double z)
         {
             int xr = FastRound(x);
             int yr = FastRound(y);
             int zr = FastRound(z);
 
-            float distance = 999999;
+            double distance = 999999;
             int xc = 0, yc = 0, zc = 0;
 
             switch (_mCellularDistanceFunction)
@@ -1889,11 +1938,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
                             {
                                 Float3 vec = Cell3D[Hash3D(_mSeed, xi, yi, zi) & 255];
 
-                                float vecX = xi - x + vec.X * _mCellularJitter;
-                                float vecY = yi - y + vec.Y * _mCellularJitter;
-                                float vecZ = zi - z + vec.Z * _mCellularJitter;
+                                double vecX = xi - x + vec.X * _mCellularJitter;
+                                double vecY = yi - y + vec.Y * _mCellularJitter;
+                                double vecZ = zi - z + vec.Z * _mCellularJitter;
 
-                                float newDistance = vecX * vecX + vecY * vecY + vecZ * vecZ;
+                                double newDistance = vecX * vecX + vecY * vecY + vecZ * vecZ;
 
                                 if (newDistance < distance)
                                 {
@@ -1916,11 +1965,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
                             {
                                 Float3 vec = Cell3D[Hash3D(_mSeed, xi, yi, zi) & 255];
 
-                                float vecX = xi - x + vec.X * _mCellularJitter;
-                                float vecY = yi - y + vec.Y * _mCellularJitter;
-                                float vecZ = zi - z + vec.Z * _mCellularJitter;
+                                double vecX = xi - x + vec.X * _mCellularJitter;
+                                double vecY = yi - y + vec.Y * _mCellularJitter;
+                                double vecZ = zi - z + vec.Z * _mCellularJitter;
 
-                                float newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ);
+                                double newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ);
 
                                 if (newDistance < distance)
                                 {
@@ -1943,11 +1992,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
                             {
                                 Float3 vec = Cell3D[Hash3D(_mSeed, xi, yi, zi) & 255];
 
-                                float vecX = xi - x + vec.X * _mCellularJitter;
-                                float vecY = yi - y + vec.Y * _mCellularJitter;
-                                float vecZ = zi - z + vec.Z * _mCellularJitter;
+                                double vecX = xi - x + vec.X * _mCellularJitter;
+                                double vecY = yi - y + vec.Y * _mCellularJitter;
+                                double vecZ = zi - z + vec.Z * _mCellularJitter;
 
-                                float newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ) + (vecX * vecX + vecY * vecY + vecZ * vecZ);
+                                double newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ) + (vecX * vecX + vecY * vecY + vecZ * vecZ);
 
                                 if (newDistance < distance)
                                 {
@@ -1969,23 +2018,23 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
                 case CellularReturnType.NoiseLookup:
                     Float3 vec = Cell3D[Hash3D(_mSeed, xc, yc, zc) & 255];
-                    return _mCellularNoiseUtilLookup.GetNoise(xc + vec.X * _mCellularJitter, yc + vec.Y * _mCellularJitter, zc + vec.Z * _mCellularJitter);
+                    return (float) _mCellularNoiseUtilLookup.GetNoise(xc + vec.X * _mCellularJitter, yc + vec.Y * _mCellularJitter, zc + vec.Z * _mCellularJitter);
 
                 case CellularReturnType.Distance:
-                    return distance;
+                    return (float) distance;
 
                 default:
                     return 0;
             }
         }
 
-        float SingleCellular2Edge(float x, float y, float z)
+        double SingleCellular2Edge(double x, double y, double z)
         {
             int xr = FastRound(x);
             int yr = FastRound(y);
             int zr = FastRound(z);
 
-            float[] distance = { 999999, 999999, 999999, 999999 };
+            double[] distance = { 999999, 999999, 999999, 999999 };
 
             switch (_mCellularDistanceFunction)
             {
@@ -1998,11 +2047,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
                             {
                                 Float3 vec = Cell3D[Hash3D(_mSeed, xi, yi, zi) & 255];
 
-                                float vecX = xi - x + vec.X * _mCellularJitter;
-                                float vecY = yi - y + vec.Y * _mCellularJitter;
-                                float vecZ = zi - z + vec.Z * _mCellularJitter;
+                                double vecX = xi - x + vec.X * _mCellularJitter;
+                                double vecY = yi - y + vec.Y * _mCellularJitter;
+                                double vecZ = zi - z + vec.Z * _mCellularJitter;
 
-                                float newDistance = vecX * vecX + vecY * vecY + vecZ * vecZ;
+                                double newDistance = vecX * vecX + vecY * vecY + vecZ * vecZ;
 
                                 for (int i = _mCellularDistanceIndex1; i > 0; i--)
                                     distance[i] = Math.Max(Math.Min(distance[i], newDistance), distance[i - 1]);
@@ -2021,11 +2070,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
                             {
                                 Float3 vec = Cell3D[Hash3D(_mSeed, xi, yi, zi) & 255];
 
-                                float vecX = xi - x + vec.X * _mCellularJitter;
-                                float vecY = yi - y + vec.Y * _mCellularJitter;
-                                float vecZ = zi - z + vec.Z * _mCellularJitter;
+                                double vecX = xi - x + vec.X * _mCellularJitter;
+                                double vecY = yi - y + vec.Y * _mCellularJitter;
+                                double vecZ = zi - z + vec.Z * _mCellularJitter;
 
-                                float newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ);
+                                double newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ);
 
                                 for (int i = _mCellularDistanceIndex1; i > 0; i--)
                                     distance[i] = Math.Max(Math.Min(distance[i], newDistance), distance[i - 1]);
@@ -2044,11 +2093,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
                             {
                                 Float3 vec = Cell3D[Hash3D(_mSeed, xi, yi, zi) & 255];
 
-                                float vecX = xi - x + vec.X * _mCellularJitter;
-                                float vecY = yi - y + vec.Y * _mCellularJitter;
-                                float vecZ = zi - z + vec.Z * _mCellularJitter;
+                                double vecX = xi - x + vec.X * _mCellularJitter;
+                                double vecY = yi - y + vec.Y * _mCellularJitter;
+                                double vecZ = zi - z + vec.Z * _mCellularJitter;
 
-                                float newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ) + (vecX * vecX + vecY * vecY + vecZ * vecZ);
+                                double newDistance = Math.Abs(vecX) + Math.Abs(vecY) + Math.Abs(vecZ) + (vecX * vecX + vecY * vecY + vecZ * vecZ);
 
                                 for (int i = _mCellularDistanceIndex1; i > 0; i--)
                                     distance[i] = Math.Max(Math.Min(distance[i], newDistance), distance[i - 1]);
@@ -2083,27 +2132,27 @@ namespace MinecraftClone.World_CS.Generation.Noise
 
         public float GetCellular(float x, float y)
         {
-            x *= _mFrequency;
-            y *= _mFrequency;
+            x *= (float)_mFrequency;
+            y *= (float)_mFrequency;
 
             switch (_mCellularReturnType)
             {
                 case CellularReturnType.CellValue:
                 case CellularReturnType.NoiseLookup:
                 case CellularReturnType.Distance:
-                    return SingleCellular(x, y);
+                    return (float) SingleCellular(x, y);
 
                 default:
-                    return SingleCellular2Edge(x, y);
+                    return (float) SingleCellular2Edge(x, y);
             }
         }
 
-        float SingleCellular(float x, float y)
+        double SingleCellular(double x, double y)
         {
             int xr = FastRound(x);
             int yr = FastRound(y);
 
-            float distance = 999999;
+            double distance = 999999;
             int xc = 0, yc = 0;
 
             switch (_mCellularDistanceFunction)
@@ -2116,10 +2165,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         {
                             Float2 vec = Cell2D[Hash2D(_mSeed, xi, yi) & 255];
 
-                            float vecX = xi - x + vec.X * _mCellularJitter;
-                            float vecY = yi - y + vec.Y * _mCellularJitter;
+                            double vecX = xi - x + vec.X * _mCellularJitter;
+                            double vecY = yi - y + vec.Y * _mCellularJitter;
 
-                            float newDistance = vecX * vecX + vecY * vecY;
+                            double newDistance = vecX * vecX + vecY * vecY;
 
                             if (newDistance < distance)
                             {
@@ -2138,10 +2187,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         {
                             Float2 vec = Cell2D[Hash2D(_mSeed, xi, yi) & 255];
 
-                            float vecX = xi - x + vec.X * _mCellularJitter;
-                            float vecY = yi - y + vec.Y * _mCellularJitter;
+                            double vecX = xi - x + vec.X * _mCellularJitter;
+                            double vecY = yi - y + vec.Y * _mCellularJitter;
 
-                            float newDistance = Math.Abs(vecX) + Math.Abs(vecY);
+                            double newDistance = Math.Abs(vecX) + Math.Abs(vecY);
 
                             if (newDistance < distance)
                             {
@@ -2160,10 +2209,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         {
                             Float2 vec = Cell2D[Hash2D(_mSeed, xi, yi) & 255];
 
-                            float vecX = xi - x + vec.X * _mCellularJitter;
-                            float vecY = yi - y + vec.Y * _mCellularJitter;
+                            double vecX = xi - x + vec.X * _mCellularJitter;
+                            double vecY = yi - y + vec.Y * _mCellularJitter;
 
-                            float newDistance = Math.Abs(vecX) + Math.Abs(vecY) + (vecX * vecX + vecY * vecY);
+                            double newDistance = Math.Abs(vecX) + Math.Abs(vecY) + (vecX * vecX + vecY * vecY);
 
                             if (newDistance < distance)
                             {
@@ -2193,12 +2242,12 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        float SingleCellular2Edge(float x, float y)
+        double SingleCellular2Edge(double x, double y)
         {
             int xr = FastRound(x);
             int yr = FastRound(y);
 
-            float[] distance = { 999999, 999999, 999999, 999999 };
+            double[] distance = { 999999, 999999, 999999, 999999 };
 
             switch (_mCellularDistanceFunction)
             {
@@ -2210,10 +2259,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         {
                             Float2 vec = Cell2D[Hash2D(_mSeed, xi, yi) & 255];
 
-                            float vecX = xi - x + vec.X * _mCellularJitter;
-                            float vecY = yi - y + vec.Y * _mCellularJitter;
+                            double vecX = xi - x + vec.X * _mCellularJitter;
+                            double vecY = yi - y + vec.Y * _mCellularJitter;
 
-                            float newDistance = vecX * vecX + vecY * vecY;
+                            double newDistance = vecX * vecX + vecY * vecY;
 
                             for (int i = _mCellularDistanceIndex1; i > 0; i--)
                                 distance[i] = Math.Max(Math.Min(distance[i], newDistance), distance[i - 1]);
@@ -2229,10 +2278,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         {
                             Float2 vec = Cell2D[Hash2D(_mSeed, xi, yi) & 255];
 
-                            float vecX = xi - x + vec.X * _mCellularJitter;
-                            float vecY = yi - y + vec.Y * _mCellularJitter;
+                            double vecX = xi - x + vec.X * _mCellularJitter;
+                            double vecY = yi - y + vec.Y * _mCellularJitter;
 
-                            float newDistance = Math.Abs(vecX) + Math.Abs(vecY);
+                            double newDistance = Math.Abs(vecX) + Math.Abs(vecY);
 
                             for (int i = _mCellularDistanceIndex1; i > 0; i--)
                                 distance[i] = Math.Max(Math.Min(distance[i], newDistance), distance[i - 1]);
@@ -2248,10 +2297,10 @@ namespace MinecraftClone.World_CS.Generation.Noise
                         {
                             Float2 vec = Cell2D[Hash2D(_mSeed, xi, yi) & 255];
 
-                            float vecX = xi - x + vec.X * _mCellularJitter;
-                            float vecY = yi - y + vec.Y * _mCellularJitter;
+                            double vecX = xi - x + vec.X * _mCellularJitter;
+                            double vecY = yi - y + vec.Y * _mCellularJitter;
 
-                            float newDistance = Math.Abs(vecX) + Math.Abs(vecY) + (vecX * vecX + vecY * vecY);
+                            double newDistance = Math.Abs(vecX) + Math.Abs(vecY) + (vecX * vecX + vecY * vecY);
 
                             for (int i = _mCellularDistanceIndex1; i > 0; i--)
                                 distance[i] = Math.Max(Math.Min(distance[i], newDistance), distance[i - 1]);
@@ -2291,8 +2340,8 @@ namespace MinecraftClone.World_CS.Generation.Noise
         public void GradientPerturbFractal(ref float x, ref float y, ref float z)
         {
             long seed = _mSeed;
-            float amp = _mGradientPerturbAmp * _mFractalBounding;
-            float freq = _mFrequency;
+            double amp = _mGradientPerturbAmp * _mFractalBounding;
+            double freq = _mFrequency;
 
             SingleGradientPerturb(seed, amp, _mFrequency, ref x, ref y, ref z);
 
@@ -2304,11 +2353,11 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        void SingleGradientPerturb(long seed, float perturbAmp, float frequency, ref float x, ref float y, ref float z)
+        void SingleGradientPerturb(long seed, double perturbAmp, double frequency, ref float x, ref float y, ref float z)
         {
-            float xf = x * frequency;
-            float yf = y * frequency;
-            float zf = z * frequency;
+            double xf = x * frequency;
+            double yf = y * frequency;
+            double zf = z * frequency;
 
             int x0 = FastFloor(xf);
             int y0 = FastFloor(yf);
@@ -2317,7 +2366,7 @@ namespace MinecraftClone.World_CS.Generation.Noise
             int y1 = y0 + 1;
             int z1 = z0 + 1;
 
-            float xs, ys, zs;
+            double xs, ys, zs;
             switch (_mInterp)
             {
                 default:
@@ -2343,20 +2392,20 @@ namespace MinecraftClone.World_CS.Generation.Noise
             Float3 vec0 = Cell3D[Hash3D(seed, x0, y0, z0) & 255];
             Float3 vec1 = Cell3D[Hash3D(seed, x1, y0, z0) & 255];
 
-            float lx0X = Lerp(vec0.X, vec1.X, xs);
-            float ly0X = Lerp(vec0.Y, vec1.Y, xs);
-            float lz0X = Lerp(vec0.Z, vec1.Z, xs);
+            double lx0X = Lerp(vec0.X, vec1.X, xs);
+            double ly0X = Lerp(vec0.Y, vec1.Y, xs);
+            double lz0X = Lerp(vec0.Z, vec1.Z, xs);
 
             vec0 = Cell3D[Hash3D(seed, x0, y1, z0) & 255];
             vec1 = Cell3D[Hash3D(seed, x1, y1, z0) & 255];
 
-            float lx1X = Lerp(vec0.X, vec1.X, xs);
-            float ly1X = Lerp(vec0.Y, vec1.Y, xs);
-            float lz1X = Lerp(vec0.Z, vec1.Z, xs);
+            double lx1X = Lerp(vec0.X, vec1.X, xs);
+            double ly1X = Lerp(vec0.Y, vec1.Y, xs);
+            double lz1X = Lerp(vec0.Z, vec1.Z, xs);
 
-            float lx0Y = Lerp(lx0X, lx1X, ys);
-            float ly0Y = Lerp(ly0X, ly1X, ys);
-            float lz0Y = Lerp(lz0X, lz1X, ys);
+            double lx0Y = Lerp(lx0X, lx1X, ys);
+            double ly0Y = Lerp(ly0X, ly1X, ys);
+            double lz0Y = Lerp(lz0X, lz1X, ys);
 
             vec0 = Cell3D[Hash3D(seed, x0, y0, z1) & 255];
             vec1 = Cell3D[Hash3D(seed, x1, y0, z1) & 255];
@@ -2372,9 +2421,9 @@ namespace MinecraftClone.World_CS.Generation.Noise
             ly1X = Lerp(vec0.Y, vec1.Y, xs);
             lz1X = Lerp(vec0.Z, vec1.Z, xs);
 
-            x += Lerp(lx0Y, Lerp(lx0X, lx1X, ys), zs) * perturbAmp;
-            y += Lerp(ly0Y, Lerp(ly0X, ly1X, ys), zs) * perturbAmp;
-            z += Lerp(lz0Y, Lerp(lz0X, lz1X, ys), zs) * perturbAmp;
+            x += (float)(Lerp(lx0Y, Lerp(lx0X, lx1X, ys), zs) * perturbAmp);
+            y += (float)(Lerp(ly0Y, Lerp(ly0X, ly1X, ys), zs) * perturbAmp);
+            z += (float)(Lerp(lz0Y, Lerp(lz0X, lz1X, ys), zs) * perturbAmp);
         }
 
         public void GradientPerturb(ref float x, ref float y)
@@ -2385,8 +2434,8 @@ namespace MinecraftClone.World_CS.Generation.Noise
         public void GradientPerturbFractal(ref float x, ref float y)
         {
             long seed = _mSeed;
-            float amp = _mGradientPerturbAmp * _mFractalBounding;
-            float freq = _mFrequency;
+            double amp = _mGradientPerturbAmp * _mFractalBounding;
+            double freq = _mFrequency;
 
             SingleGradientPerturb(seed, amp, _mFrequency, ref x, ref y);
 
@@ -2398,17 +2447,18 @@ namespace MinecraftClone.World_CS.Generation.Noise
             }
         }
 
-        void SingleGradientPerturb(long seed, float perturbAmp, float frequency, ref float x, ref float y)
+        void SingleGradientPerturb(long seed, double perturbAmp, double frequency, ref float x, ref float y)
         {
-            float xf = x * frequency;
-            float yf = y * frequency;
+            double xf = x * frequency;
+            double yf = y * frequency;
 
             int x0 = FastFloor(xf);
             int y0 = FastFloor(yf);
             int x1 = x0 + 1;
             int y1 = y0 + 1;
 
-            float xs, ys;
+            double xs;
+            double ys;
             switch (_mInterp)
             {
                 default:
@@ -2431,17 +2481,17 @@ namespace MinecraftClone.World_CS.Generation.Noise
             Float2 vec0 = Cell2D[Hash2D(seed, x0, y0) & 255];
             Float2 vec1 = Cell2D[Hash2D(seed, x1, y0) & 255];
 
-            float lx0X = Lerp(vec0.X, vec1.X, xs);
-            float ly0X = Lerp(vec0.Y, vec1.Y, xs);
+            double lx0X = Lerp(vec0.X, vec1.X, xs);
+            double ly0X = Lerp(vec0.Y, vec1.Y, xs);
 
             vec0 = Cell2D[Hash2D(seed, x0, y1) & 255];
             vec1 = Cell2D[Hash2D(seed, x1, y1) & 255];
 
-            float lx1X = Lerp(vec0.X, vec1.X, xs);
-            float ly1X = Lerp(vec0.Y, vec1.Y, xs);
+            double lx1X = Lerp(vec0.X, vec1.X, xs);
+            double ly1X = Lerp(vec0.Y, vec1.Y, xs);
 
-            x += Lerp(lx0X, lx1X, ys) * perturbAmp;
-            y += Lerp(ly0X, ly1X, ys) * perturbAmp;
+            x += (float)(Lerp(lx0X, lx1X, ys) * perturbAmp);
+            y += (float)(Lerp(ly0X, ly1X, ys) * perturbAmp);
         }
     }
 }

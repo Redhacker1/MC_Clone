@@ -1,6 +1,6 @@
 using System;
 
-namespace MinecraftClone.World_CS.Utility.JavaImports
+namespace MinecraftClone.Utility.JavaImports
 {
     public class Random
     {

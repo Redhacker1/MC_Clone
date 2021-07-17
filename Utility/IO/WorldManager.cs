@@ -5,7 +5,7 @@ using Environment = System.Environment;
 using File = System.IO.File;
 using Path = System.IO.Path;
 
-namespace MinecraftClone.World_CS.Utility.IO
+namespace MinecraftClone.Utility.IO
 {
 
     public struct WorldData

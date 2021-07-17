@@ -1,10 +1,12 @@
 using Godot;
+using MinecraftClone.Utility.CoreCompatibility;
+using Vector3 = System.Numerics.Vector3;
 
 namespace MinecraftClone.Player_CS
 {
     public class PlayerController
     {
-        Player pawn;
+        readonly Player pawn;
         Vector3 _velocity;
         public PlayerController(Player PawnReference)
         {
@@ -22,42 +24,42 @@ namespace MinecraftClone.Player_CS
             
             if (Input.IsActionPressed("forward"))
             {
-                direction -= cameraBaseBasis.z;
+                direction -= cameraBaseBasis.z.CastToCore();
             }
             if (Input.IsActionPressed("backward"))
             {
-                direction += cameraBaseBasis.z;
+                direction += cameraBaseBasis.z.CastToCore();
             }
                 
             if (Input.IsActionPressed("left"))
             {
-                direction -= cameraBaseBasis.x;
+                direction -= cameraBaseBasis.x.CastToCore();
             }
                 
             if (Input.IsActionPressed("right"))
             {
-                direction += cameraBaseBasis.x;
+                direction += cameraBaseBasis.x.CastToCore();
             }
             
             if (!pawn.OnGround)
             {
-                _velocity.y -= .2f * delta;   
+                _velocity.Y -= .2f * delta;   
             }
             else
             {
-                _velocity.y = 0;
+                _velocity.Y = 0;
             }
 
 
             if (Input.IsActionPressed("jump") && pawn.OnGround)
             {
-                _velocity.y = 6f * delta;
+                _velocity.Y = 6f * delta;
             }
-            _velocity.x = direction.x * Player.Speed * delta;
-            _velocity.z = direction.z * Player.Speed * delta;
+            _velocity.X = direction.X * Player.Speed * delta;
+            _velocity.Z = direction.Z * Player.Speed * delta;
 
             pawn.Pos = _velocity;
-            pawn.MoveRelative(_velocity.x, _velocity.z, Player.Speed);
+            pawn.MoveRelative(_velocity.X, _velocity.Z, Player.Speed);
             pawn.Move(_velocity);
         }
     }

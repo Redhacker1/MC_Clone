@@ -1,6 +1,6 @@
-﻿using Godot;
+﻿using System.Numerics;
 
-namespace MinecraftClone.World_CS.Utility.Physics
+namespace MinecraftClone.Utility.Physics
 {
     public struct HitResult
     {

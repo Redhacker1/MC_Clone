@@ -1,7 +1,8 @@
 using System;
-using Godot;
+using MinecraftClone.Utility;
 using MinecraftClone.World_CS.Generation.Noise;
-using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
+using MinecraftClone.World_CS.Utility;
+using Random = MinecraftClone.Utility.JavaImports.Random;
 
 namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 {
@@ -22,10 +23,10 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 			HeightNoise.SetFractalOctaves(100);
 
 
-			float noise = HeightNoise.GetSimplex(X + Chunk.ChunkCoordinate.x, seed, Z + Chunk.ChunkCoordinate.y);
+			float noise = HeightNoise.GetSimplex(X + Chunk.ChunkCoordinate.X, seed, Z + Chunk.ChunkCoordinate.Y);
 			noise /= 2;
 
-            int Depth = (int) Mathf.Lerp(1,6,Math.Abs(noise));
+            int Depth = (int) MathHelper.Lerp(1,6,Math.Abs(noise));
 
             for (int I = 0; I < Depth; I++)
 			{
@@ -47,8 +48,8 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 
 			for (int NTree = 0; NTree < Rng.NextInt(2, 8); NTree++)
 			{
-				int PosX = Rng.NextInt(treeWidth, (int) ChunkCs.Dimension.x - treeWidth - 1);
-				int PosZ = Rng.NextInt(treeWidth, (int) ChunkCs.Dimension.x - treeWidth - 1);
+				int PosX = Rng.NextInt(treeWidth, (int) ChunkCs.Dimension.X - treeWidth - 1);
+				int PosZ = Rng.NextInt(treeWidth, (int) ChunkCs.Dimension.Z - treeWidth - 1);
 				int TreeHeight = Rng.NextInt(4, 8);
 				
 				for (int I = 0; I < TreeHeight; I++)
@@ -89,8 +90,8 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 
 				for (int NShrub = 0; NShrub < Rng.NextInt(6, 10); NShrub++)
 				{
-					int X = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
-					int Z = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
+					int X = Rng.NextInt(0, (int)ChunkCs.Dimension.X - 1);
+					int Z = Rng.NextInt(0, (int)ChunkCs.Dimension.Z - 1);
 					int Y = GroundHeight[X,Z];
 					
 					// 11 is block ID for tall grass
@@ -102,8 +103,8 @@ namespace MinecraftClone.World_CS.Generation.Chunk_Generator_cs
 
 				for (int NFlower = 0; NFlower < Rng.NextInt(4, 6); NFlower++)
 				{
-					int X = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
-					int Z = Rng.NextInt(0, (int)ChunkCs.Dimension.x - 1);
+					int X = Rng.NextInt(0, (int)ChunkCs.Dimension.X - 1);
+					int Z = Rng.NextInt(0, (int)ChunkCs.Dimension.Z - 1);
 					int Y = GroundHeight[X,Z];
 					
 					// 3 is BID for flower

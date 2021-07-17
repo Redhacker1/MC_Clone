@@ -1,8 +1,10 @@
 ﻿using System;
 using Godot;
+using MinecraftClone.Utility.CoreCompatibility;
+using Vector3 = System.Numerics.Vector3;
 using MinecraftClone.World_CS.Generation;
 
-namespace MinecraftClone.World_CS.Utility.Physics
+namespace MinecraftClone.Utility.Physics
 {
     public static class Raycast
     {
@@ -10,10 +12,9 @@ namespace MinecraftClone.World_CS.Utility.Physics
         public static HitResult CastToPoint(Vector3 StartDir, Vector3 EndLocation, float debugtime)
         {
             Vector3 delta = EndLocation - StartDir;
-            Vector3 deltaNormal = delta.Normalized();
+            Vector3 deltaNormal = Vector3.Normalize(delta);
 
             int lineLength = (int) Math.Floor(delta.Length());
-            bool res = true;
 
             return CastInDirection(StartDir, deltaNormal, debugtime, lineLength);
         }
@@ -21,21 +22,24 @@ namespace MinecraftClone.World_CS.Utility.Physics
         public static HitResult CastInDirection(Vector3 Origin, Vector3 Direction, float debugtime, int MaxVoxeldistance = 100)
         {
             HitResult outResult = new HitResult();
-            Vector3 position = Origin.Floor();
+            Vector3 position = Origin + new Vector3(.5f, .5f, .5f);
             Vector3 direction = Direction;
-            
-            int max = 50; // block reach. The higher this value is, the further the player can modify blocks
 
-            Vector3 sign = new Vector3(); // dda stuff
 
-            for (int i = 0; i < 3; ++i)
-                sign[i] = direction[i] > 0 ? 1 : 0;
-            
+            Vector3 sign = new Vector3
+            {
+                X = direction.X > 0 ? 1 : 0,
+                Y = direction.Y > 0 ? 1 : 0,
+                Z = direction.Z > 0 ? 1 : 0
+            }; // dda stuff
+
+
+
             for (int i = 0; i < MaxVoxeldistance; ++i)
             {
-                Vector3 tvec = ((position.Floor() + sign.Floor()) - position) / direction;
+                Vector3 tvec = ((position + sign).Floor() - position) / direction;
                 
-                float t = Math.Min(tvec.x, Math.Min(tvec.y, tvec.z));
+                float t = Math.Min(tvec.X, Math.Min(tvec.Y, tvec.Z));
 
                 position += direction * (t + 0.001f); // +0.001 is an epsilon value so that you dont get precision issues
                 //position.Floor();
@@ -45,29 +49,39 @@ namespace MinecraftClone.World_CS.Utility.Physics
                 // Get the position at the current ray position. HACK: this prevents it from working in editor, however it crashes in editor.
                 if (Engine.EditorHint == false)
                 {
-                    id = ProcWorld.instance.GetBlockIdFromWorldPos((int) position.x, (int) position.y, (int) position.z);    
+                    id = ProcWorld.instance.GetBlockIdFromWorldPos((int) position.X, (int) position.Y, (int) position.Z);    
                 }
                 
                 // TODO: Add Collision masks to allow for more selective picking of blocks in the world.
                 if (id != 0) // 0 here, just means air. This statement just says that you've hit a block IF the current ray march step *isnt* air.
                 {
                     Vector3 normal = new Vector3();
-                    for (int j = 0; j < 3; ++j)
+                    
+                    
+                    normal.X = (t == tvec.X) ? 1 : 0;
+                    if (sign.X == 1)
                     {
-                        normal[j] = (t == tvec[j]) ? 1 : 0;
-
-                        if (sign[j] == 1)
-                        {
-                            normal[j] = -normal[j];
-                        }
+                        normal.X = -normal.X;
+                    }
+                    
+                    normal.Y = (t == tvec.Y) ? 1 : 0;
+                    if (sign.Y == 1)
+                    {
+                        normal.Y = -normal.Y;
+                    }
+                    
+                    normal.Z = (t == tvec.Z) ? 1 : 0;
+                    if (sign.Z == 1)
+                    {
+                        normal.Z = -normal.Z;
                     }
 
                     outResult.Normal = normal;
-                    outResult.Location = position;
                     outResult.Hit = true;
                     
                     break;
                 }
+                outResult.Location = position.Floor();
                 
                 
             }

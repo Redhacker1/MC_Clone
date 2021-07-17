@@ -16,3 +16,4 @@ mods/*
 #Intellij specific ignores
 .idea/*
 *.log
+*.import

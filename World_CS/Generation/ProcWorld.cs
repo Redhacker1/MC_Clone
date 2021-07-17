@@ -2,34 +2,50 @@
 	Might be best to move some of the more chunk oriented methods into the chunkCS class that do not use the chunk class statically.
  */
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using Godot;
-using MinecraftClone.Debug_and_Logging;
-using MinecraftClone.World_CS.Blocks;
-using MinecraftClone.World_CS.Generation.Noise;
-using MinecraftClone.World_CS.Utility;
-using MinecraftClone.World_CS.Utility.IO;
-using MinecraftClone.World_CS.Utility.Threading;
-using AABB = MinecraftClone.World_CS.Utility.Physics.AABB;
-using Random = MinecraftClone.World_CS.Utility.JavaImports.Random;
-using Thread = System.Threading.Thread;
+//#define Core
+
+#if Core
+	// Dependencies used in .net Core exclusively
+	using MinecraftClone.Utility.Physics;
+	using System.Threading;
+	using System.Numerics;
+#else
+	// Dependencies used in Godot standard library exclusively
+	using AABB = MinecraftClone.Utility.Physics.AABB;
+	using Thread = System.Threading.Thread;
+	using Godot;
+#endif
+	// Dependencies used Regardless
+	using  Vector2 = System.Numerics.Vector2;
+	using Vector3 = System.Numerics.Vector3;
+	using Random = MinecraftClone.Utility.JavaImports.Random;
+	using System;
+	using System.Collections.Concurrent;
+	using System.Collections.Generic;
+	using System.Linq;
+	using MinecraftClone.Debug_and_Logging;
+	using MinecraftClone.Utility;
+	using MinecraftClone.Utility.CoreCompatibility;
+	using MinecraftClone.Utility.IO;
+	using MinecraftClone.Utility.Threading;
+	using MinecraftClone.World_CS.Blocks;
+	using MinecraftClone.World_CS.Utility;
 
 namespace MinecraftClone.World_CS.Generation
 {
+	#if Core
+	public class ProcWorld
+	#else
 	public class ProcWorld : Spatial
+	#endif
 	{
 
 		public static ProcWorld instance;
-		
-		ThreadPoolClass _threads = new ThreadPoolClass();
+
+		readonly ThreadPoolClass _threads = new ThreadPoolClass();
 		
 		// Max chunks radius comes out to (_loadRadius*2)^2 
-		int _loadRadius = 16;
-
-		readonly object _chunkMutex = new object();
+		readonly int _loadRadius = 16;
 
 		public static Random WorldRandom;
 		public static long WorldSeed;
@@ -55,8 +71,11 @@ namespace MinecraftClone.World_CS.Generation
 			WorldRandom = new Random(seed); 
 		}
 		
-
+		#if Core
+		public void _Ready()
+		#else
 		public override void _Ready()
+		#endif
 		{
 			if (instance != null)
 				return;
@@ -98,7 +117,7 @@ namespace MinecraftClone.World_CS.Generation
 				if (PlayerPosUpdated)
 				{
 					enforce_render_distance(_currentChunkPos);
-					_lastChunk = _load_chunk((int) _currentChunkPos.x, (int) _currentChunkPos.y);
+					_lastChunk = _load_chunk((int) _currentChunkPos.X, (int) _currentChunkPos.Y);
 					_currentLoadRadius = 1;
 				}
 				else
@@ -109,22 +128,22 @@ namespace MinecraftClone.World_CS.Generation
 					if (DeltaPos == Vector2.Zero)
 					{
 						// Move down one
-						_lastChunk = _load_chunk((int) _lastChunk.x, (int) _lastChunk.y + 1);
+						_lastChunk = _load_chunk((int) _lastChunk.X, (int) _lastChunk.Y + 1);
 					}
-					else if (DeltaPos.x < DeltaPos.y)
+					else if (DeltaPos.X < DeltaPos.Y)
 					{
 						// Either go right or up
 						// Prioritize going right
-						if ((DeltaPos.y == _currentLoadRadius) & (-DeltaPos.x != _currentLoadRadius))
+						if ((DeltaPos.Y == _currentLoadRadius) & (-DeltaPos.X != _currentLoadRadius))
 						{
 							//Go right
-							_lastChunk = _load_chunk((int)_lastChunk.x - 1, (int) _lastChunk.y);
+							_lastChunk = _load_chunk((int)_lastChunk.X - 1, (int) _lastChunk.Y);
 						}
 						// Either moving in constant x or we just reached bottom right. Addendum by donovan: this looping on the X axis has happened to me actually
-						else if ((-DeltaPos.x == _currentLoadRadius) | (-DeltaPos.x == DeltaPos.y))
+						else if ((-DeltaPos.X == _currentLoadRadius) | (-DeltaPos.X == DeltaPos.Y))
 						{
 							// Go up
-							_lastChunk = _load_chunk((int) _lastChunk.x, (int) _lastChunk.y - 1);
+							_lastChunk = _load_chunk((int) _lastChunk.X, (int) _lastChunk.Y - 1);
 						}
 						else
 						{
@@ -139,18 +158,18 @@ namespace MinecraftClone.World_CS.Generation
 					{
 						//Either go left or down
 						//Prioritize going left
-						if ((-DeltaPos.y == _currentLoadRadius) & (DeltaPos.x != _currentLoadRadius))
+						if ((-DeltaPos.Y == _currentLoadRadius) & (DeltaPos.X != _currentLoadRadius))
 						{
 							//Go left
-							_lastChunk = _load_chunk((int) _lastChunk.x + 1, (int) _lastChunk.y);	
+							_lastChunk = _load_chunk((int) _lastChunk.X + 1, (int) _lastChunk.Y);	
 						}
-						else if ((DeltaPos.x == _currentLoadRadius) | (DeltaPos.x == -DeltaPos.y))
+						else if ((DeltaPos.X == _currentLoadRadius) | (DeltaPos.X == -DeltaPos.Y))
 						{
 							// Go down
 							// Stop the last one where we'd go over the limit
-							if (DeltaPos.y < _loadRadius)
+							if (DeltaPos.Y < _loadRadius)
 							{
-								_lastChunk = _load_chunk((int) _lastChunk.x, (int) _lastChunk.y + 1);
+								_lastChunk = _load_chunk((int) _lastChunk.X, (int) _lastChunk.Y + 1);
 							}
 						}
 					}
@@ -162,10 +181,7 @@ namespace MinecraftClone.World_CS.Generation
 		{
 			Vector2 Cpos = new Vector2(Cx, Cz);
 			bool LoadChunk;
-			lock (_chunkMutex)
-			{
-				LoadChunk = !LoadedChunks.ContainsKey(Cpos);
-			}
+			LoadChunk = !LoadedChunks.ContainsKey(Cpos);
 
 			if (LoadChunk)
 			{
@@ -177,12 +193,10 @@ namespace MinecraftClone.World_CS.Generation
 				else
 				{
 					C = new ChunkCs();
-					C.InstantiateChunk(this, Cx, Cz, Vector3.Zero, WorldSeed);	
+					C.InstantiateChunk(this, Cx, Cz, WorldSeed);	
 				}
-				lock (_chunkMutex)
-				{
-					LoadedChunks[Cpos] = C;
-				}
+				
+				LoadedChunks[Cpos] = C;
 
 				if (C != null)
 				{
@@ -196,27 +210,27 @@ namespace MinecraftClone.World_CS.Generation
 
 		public string ReloadChunks(params string[] Args)
 		{
-			Vector2[] Chunks = LoadedChunks.Keys.ToArray();
+			IEnumerable<Vector2> Chunks = LoadedChunks.Keys;
 
 			foreach (Vector2 ChunkPos in Chunks)
 			{
 				update_player_pos(ChunkPos);
 			}
-			return $"{Chunks.Length} Chunks sent to threadpool for processing...";
+			return $"{Chunks.Count()} Chunks sent to threadpool for processing...";
 		}
 
 
 		public List<AABB> Get_aabbs(int layer, AABB Aabb)
 		{
 			List<AABB> aabbs = new List<AABB>();
-			Vector3 a = new Vector3(Aabb.MinLoc.x - 1, Aabb.MinLoc.y - 1, Aabb.MinLoc.z - 1);
-			Vector3 b = new Vector3(Aabb.MaxLoc.x, Aabb.MaxLoc.y, Aabb.MaxLoc.z);
+			Vector3 a = new Vector3(Aabb.MinLoc.X - 1, Aabb.MinLoc.Y - 1, Aabb.MinLoc.Z - 1);
+			Vector3 b = new Vector3(Aabb.MaxLoc.X, Aabb.MaxLoc.Y, Aabb.MaxLoc.Z);
 
-			for (int z = (int) a.z; z < b.z; z++)
+			for (int z = (int) a.Z; z < b.Z; z++)
 			{
-				for (int y = (int) a.y; y < b.y; y++)
+				for (int y = (int) a.Y; y < b.Y; y++)
 				{
-					for (int x = (int) a.x; x < b.x; x++)
+					for (int x = (int) a.X; x < b.X; x++)
 					{
 						byte block = GetBlockIdFromWorldPos(x, y, z);
 						if (BlockHelper.BlockTypes[block].NoCollision || block == 0) continue;
@@ -231,18 +245,18 @@ namespace MinecraftClone.World_CS.Generation
 
 		void DebugLine(Vector3 A, Vector3 B)
 		{
-			WorldScript.lines.Drawline(A, B, Colors.Red);
+			WorldScript.lines.Drawline(A.CastToGodot(), B.CastToGodot(), Colors.Red);
 		}
 
 
 		public byte GetBlockIdFromWorldPos(int X, int Y, int Z)
 		{
 			
-			int cx = (int) Math.Floor(X / ChunkCs.Dimension.x);
-			int cz = (int) Math.Floor(Z / ChunkCs.Dimension.x);
+			int cx = (int) Math.Floor(X / ChunkCs.Dimension.X);
+			int cz = (int) Math.Floor(Z / ChunkCs.Dimension.X);
 
-			int bx = (int) (Mathf.PosMod((float) Math.Floor((double)X), ChunkCs.Dimension.x));
-			int bz = (int) (Mathf.PosMod((float) Math.Floor((double)Z), ChunkCs.Dimension.x));
+			int bx = (int) (MathHelper.Modulo((float) Math.Floor((double)X), ChunkCs.Dimension.X));
+			int bz = (int) (MathHelper.Modulo((float) Math.Floor((double)Z), ChunkCs.Dimension.Z));
 
 			Vector2 chunkpos = new Vector2(cx, cz);
 
@@ -264,12 +278,12 @@ namespace MinecraftClone.World_CS.Generation
 		/// <returns>whether it is safe to write or read from the block in the chunk</returns>
 		public static bool ValidPlace(int X, int Y, int Z)
 		{
-			if (X < 0 || X >= ChunkCs.Dimension.x || Z < 0 || Z >= ChunkCs.Dimension.z)
+			if (X < 0 || X >= ChunkCs.Dimension.X || Z < 0 || Z >= ChunkCs.Dimension.Z)
 			{
 				return false;
 			}
 
-			if(Y < 0 || Y > ChunkCs.Dimension.y - 1)
+			if(Y < 0 || Y > ChunkCs.Dimension.Y - 1)
 			{
 				return false;
 			}
@@ -282,11 +296,7 @@ namespace MinecraftClone.World_CS.Generation
 
 		public void change_block(int Cx, int Cz, int Bx, int By, int Bz, byte T)
 		{
-			ChunkCs c;
-			lock (_chunkMutex)
-			{
-				c = LoadedChunks[new Vector2(Cx, Cz)];
-			}
+			ChunkCs c = LoadedChunks[new Vector2(Cx, Cz)];
 
 			if (c.BlockData[ChunkCs.GetFlattenedDimension(Bx, By, Bz)] == T) return;
 			ConsoleLibrary.DebugPrint($"Changed block at {Bx} {By} {Bz} in chunk {Cx}, {Cz}");
@@ -294,7 +304,7 @@ namespace MinecraftClone.World_CS.Generation
 			_update_chunk(Cx, Cz);
 		}
 
-		Vector2 _update_chunk(int Cx, int Cz)
+		void _update_chunk(int Cx, int Cz)
 		{
 			Vector2 Cpos = new Vector2(Cx, Cz);
 
@@ -307,35 +317,25 @@ namespace MinecraftClone.World_CS.Generation
 
 				return null;
 			});
-			return Cpos;
 		}
 
 		void enforce_render_distance(Vector2 CurrentChunkPos)
 		{
-			lock (_chunkMutex)
-			{
-				List<Vector2> KeyList = new List<Vector2>(LoadedChunks.Keys);
-				foreach (Vector2 Location in KeyList)
-					if (Math.Abs(Location.x - CurrentChunkPos.x) > _loadRadius ||
-						Math.Abs(Location.y - CurrentChunkPos.y) > _loadRadius)
-						_unloadChunk((int) Location.x, (int) Location.y);
-			}
+			List<Vector2> KeyList = new List<Vector2>(LoadedChunks.Keys);
+			foreach (Vector2 Location in KeyList)
+				if (Math.Abs(Location.X - CurrentChunkPos.X) > _loadRadius ||
+				    Math.Abs(Location.Y - CurrentChunkPos.Y) > _loadRadius)
+					_unloadChunk((int) Location.X, (int) Location.Y);
 		}
 
 		void _unloadChunk(int Cx, int Cz)
 		{
 			Vector2 Cpos = new Vector2(Cx, Cz);
-			lock (_chunkMutex)
+			if (LoadedChunks.ContainsKey(Cpos))
 			{
-				if (LoadedChunks.ContainsKey(Cpos))
-				{
-					lock (_chunkMutex)
-					{
-						SaveFileHandler.WriteChunkData(LoadedChunks[Cpos].BlockData, LoadedChunks[Cpos].ChunkCoordinate, World);
-						LoadedChunks[Cpos].QueueFree();
-						LoadedChunks.TryRemove(Cpos, out _);
-					}	
-				}
+				SaveFileHandler.WriteChunkData(LoadedChunks[Cpos].BlockData, LoadedChunks[Cpos].ChunkCoordinate, World);
+				LoadedChunks[Cpos].QueueFree();
+				LoadedChunks.TryRemove(Cpos, out _);
 			}
 
 		}
@@ -369,43 +369,39 @@ namespace MinecraftClone.World_CS.Generation
 		
 		public void SaveAndQuit()
 		{
-			if (GetTree() != null)
+			var tree = GetTree();
+			if (tree != null)
 			{
-				GetTree().Paused = true;	
+				tree.Paused = true;	
 			}
-			lock (_chunkMutex)
-            {
-	            ConsoleLibrary.DebugPrint("Saving Chunks");
+			ConsoleLibrary.DebugPrint("Saving Chunks");
 
 
-	            foreach (KeyValuePair<Vector2, ChunkCs> Chunk in LoadedChunks)
-	            {
-		            if (Chunk.Value.ChunkDirty)
-		            {
-			            _threads.AddRequest(() =>
-			            {
-				            SaveFileHandler.WriteChunkData(Chunk.Value.BlockData,
-					            Chunk.Value.ChunkCoordinate, World);
-
-				            return null; 
-			            });	
-		            }
-	            }
-	            
-	            
-	            // Hack: this needs to be corrected, probably doable with a monitor.Lock() and then a callback to evaluate the  
-	            while (_threads.AllThreadsIdle() != true)
-	            {
-		            
-	            }
-	            kill_thread();
-	            
-	            
-            }
-
-			if (GetTree() != null)
+			foreach (KeyValuePair<Vector2, ChunkCs> Chunk in LoadedChunks)
 			{
-				GetTree().Paused = false;
+				if (Chunk.Value.ChunkDirty)
+				{
+					_threads.AddRequest(() =>
+					{
+						SaveFileHandler.WriteChunkData(Chunk.Value.BlockData,
+							Chunk.Value.ChunkCoordinate, World);
+
+						return null; 
+					});	
+				}
+			}
+	            
+	            
+			// Hack: this needs to be corrected, probably doable with a monitor.Lock() and then a callback to evaluate the END
+			while (_threads.AllThreadsIdle() != true)
+			{
+		            
+			}
+			kill_thread();
+
+			if (tree != null)
+			{
+				tree.Paused = false;
 			}
 		}
 	}

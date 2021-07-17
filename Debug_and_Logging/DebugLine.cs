@@ -9,9 +9,9 @@ namespace MinecraftClone.World_CS.Utility.Debug
 
         class DebugLine
         {
-            public Vector3 Start;
-            public Vector3 End;
-            public Color LineColor;
+            public readonly Vector3 Start;
+            public readonly Vector3 End;
+            public readonly Color LineColor;
             public float drawtime;
 
             public DebugLine(Vector3 start, Vector3 end, Color color, float Time)
@@ -24,7 +24,7 @@ namespace MinecraftClone.World_CS.Utility.Debug
         }
 
 
-        List<DebugLine> lines = new List<DebugLine>();
+        readonly List<DebugLine> lines = new List<DebugLine>();
         bool RemovedLine;
         
         public override void _Process(float delta)
@@ -80,26 +80,40 @@ namespace MinecraftClone.World_CS.Utility.Debug
 
         }
 
-        public void DrawBlock(int X, int Y, int Z)
+        public void DrawBlock(int X, int Y, int Z, float delta)
         {
-            Vector3 MinLoc = new Vector3(X, Y, Z);
-            Vector3 MaxLoc = new Vector3(X + 1, Y + 1, Z + 1);
+            Vector3 MinLoc = new Vector3(X - 1, Y - 1, Z - 1);
+            Vector3 MaxLoc = new Vector3(X, Y, Z);
             
             Drawline(MinLoc, MaxLoc, Colors.Red);
         
-            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), MaxLoc, Colors.Black,2);
-            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MaxLoc, Colors.Black,2);
-            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black,2);
+            
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black,delta);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black,delta);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), MaxLoc, Colors.Black,delta);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), MaxLoc, Colors.Black,delta);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), MaxLoc, Colors.Black,delta);
 
             
             
-            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
-            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
-            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
-            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black,2);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,delta);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,delta);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black,delta);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), MinLoc, Colors.Black,delta);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), MinLoc, Colors.Black,delta);
             
             
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), Colors.Black,delta);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), Colors.Black,delta);
+            Drawline(new Vector3(MinLoc.x, MinLoc.y, MaxLoc.z), MinLoc, Colors.Black,delta);
+            Drawline(new Vector3(MaxLoc.x, MaxLoc.y, MinLoc.z), MaxLoc, Colors.Black,delta);
+
+
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MinLoc.z), new Vector3(MaxLoc.x, MaxLoc.y, MinLoc.z), Colors.Black, delta);
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MaxLoc.z), new Vector3(MinLoc.x, MinLoc.y, MaxLoc.z), Colors.Black, delta);
             
+            Drawline(new Vector3(MaxLoc.x, MinLoc.y, MinLoc.z), new Vector3(MaxLoc.x, MaxLoc.y, MinLoc.z), Colors.Black, delta);
+            Drawline(new Vector3(MinLoc.x, MaxLoc.y, MaxLoc.z), new Vector3(MinLoc.x, MinLoc.y, MaxLoc.z), Colors.Black,delta);
         }
 
         public void Drawline(Vector3 start, Vector3 end, Color color, float time = 0.0f)
